@@ -448,22 +448,29 @@ static void ClearAllDaycareData(struct DayCare *daycare)
 // Determines what the species of an Egg would be based on the given species.
 // It determines this by working backwards through the evolution chain of the
 // given species.
-static u16 GetEggSpecies(u16 species)
+u16 GetBaseForm(u16 species)
 {
     int i, j, k;
     bool8 found;
 
     // Working backwards up to 5 times seems arbitrary, since the maximum number
     // of times would only be 3 for 3-stage evolutions.
+	
+	// do this loop 5 times:
     for (i = 0; i < EVOS_PER_MON; i++)
     {
         found = FALSE;
+		// do this loop <NUM SPECIES> times (default: 386)
         for (j = 1; j < NUM_SPECIES; j++)
         {
+			// for each possible evolution (up to 5)
             for (k = 0; k < EVOS_PER_MON; k++)
             {
+				// if the target of this evolution is the species of the mon you're checking,
+				// then that's its base form.
                 if (gEvolutionTable[j][k].targetSpecies == species)
                 {
+					// so check to see if this species has a base form.
                     species = j;
                     found = TRUE;
                     break;
@@ -473,9 +480,13 @@ static u16 GetEggSpecies(u16 species)
             if (found)
                 break;
         }
-
+		// run the "look for this species's base form" loop again
+		// UNLESS it's already been run <NUM SPECIES> times, AKA has already checked every single Pokemon
         if (j == NUM_SPECIES)
             break;
+		// since elempty's evolutions can evolve back into it, put the kibosh on the loop so it doesn't return the wrong one
+		if (species == SPECIES_ELEMPTY)
+			break;
     }
 
     return species;
@@ -885,6 +896,12 @@ static void BuildEggMoveset(struct Pokemon *egg, struct BoxPokemon *father, stru
     }
 }
 
+// For egg move reminder in pokemon.c
+u16 GetEggMovesArraySize(void) 
+{
+	return ARRAY_COUNT(gEggMoves);
+}
+
 static void RemoveEggFromDayCare(struct DayCare *daycare)
 {
     daycare->offspringPersonality = 0;
@@ -980,7 +997,7 @@ static u16 DetermineEggSpeciesAndParentSlots(struct DayCare *daycare, u8 *parent
         }
     }
 
-    eggSpecies = GetEggSpecies(species[parentSlots[0]]);
+    eggSpecies = GetBaseForm(species[parentSlots[0]]);
     if (eggSpecies == SPECIES_NIDORAN_F && daycare->offspringPersonality & EGG_GENDER_MALE)
         eggSpecies = SPECIES_NIDORAN_M;
     else if (eggSpecies == SPECIES_ILLUMISE && daycare->offspringPersonality & EGG_GENDER_MALE)
