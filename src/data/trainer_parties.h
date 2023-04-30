@@ -4247,7 +4247,7 @@ static const struct TrainerMonNoItemDefaultMoves sParty_Billy[] = {
     }
 };
 
-static const struct TrainerMonNoItemCustomMoves sParty_Josh[] = {
+static const struct TrainerMonCustomized sParty_Josh[] = {
     {
     .ball = ITEM_POKE_BALL,
     .ev = TRAINER_PARTY_EVS(0, 0, 48, 64, 64, 0),
