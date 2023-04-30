@@ -4249,23 +4249,51 @@ static const struct TrainerMonNoItemDefaultMoves sParty_Billy[] = {
 
 static const struct TrainerMonNoItemCustomMoves sParty_Josh[] = {
     {
-    .iv = 100,
+    .ball = ITEM_POKE_BALL,
+    .ev = TRAINER_PARTY_EVS(0, 0, 48, 64, 64, 0),
+    .iv = TRAINER_PARTY_IVS(20, 20, 20, 20, 20, 20),
     .lvl = 10,
-    .species = SPECIES_GEODUDE,
-    .moves = {MOVE_TACKLE, MOVE_NONE, MOVE_NONE, MOVE_NONE}
+    .species = SPECIES_CHARCADET,
+    .heldItem = ITEM_CHARCOAL,
+    .ability = ABILITY_FLASH_FIRE,
+    .moves = {MOVE_EMBER, MOVE_PROTECT, MOVE_DESTINY_BOND, MOVE_HELPING_HAND},
+    .nature = TRAINER_PARTY_NATURE(NATURE_MODEST),
+    },
+    {
+    .ball = ITEM_POKE_BALL,
+    .ev = TRAINER_PARTY_EVS(),
+    .iv = TRAINER_PARTY_IVS(),
+    .lvl = 10,
+    .species = SPECIES_ESPURR,
+    .heldItem = ITEM_TWISTED_SPOON,
+    .ability = ABILITY_INFILTRATOR,
+    .moves = {MOVE_CONFUSION, MOVE_PSYCHIC_TERRAIN, MOVE_COVET, MOVE_PROTECT},
+    .nature = TRAINER_PARTY_NATURE(NATURE_TIMID),
     }
 };
 
-static const struct TrainerMonNoItemDefaultMoves sParty_Tommy[] = {
+static const struct TrainerMonCustomized sParty_Tommy[] = {
     {
-    .iv = 110,
-    .lvl = 8,
-    .species = SPECIES_GEODUDE,
+    .ball = ITEM_POKE_BALL,
+    .ev = TRAINER_PARTY_EVS(252, 0, 32, 0, 32, 32),
+    .iv = TRAINER_PARTY_IVS(31, 0, 20, 0, 20, 20),
+    .lvl = 10,
+    .species = SPECIES_FOONGUS,
+    .heldItem = ITEM_BLACK_SLUDGE,
+    .ability = ABILITY_EFFECT_SPORE,
+    .moves = {MOVE_RAGE_POWDER, MOVE_SPORE, MOVE_ABSORB, MOVE_POLLEN_PUFF},
+    .nature = TRAINER_PARTY_NATURE(NATURE_),
     },
     {
-    .iv = 120,
-    .lvl = 8,
-    .species = SPECIES_GEODUDE,
+    .ball = ITEM_POKE_BALL,
+    .ev = TRAINER_PARTY_EVS(0, 252, 0, 0, 0, 0),
+    .iv = TRAINER_PARTY_IVS(0, 31, 0, 0, 0, 0),
+    .lvl = 10,
+    .species = SPECIES_FINIZEN,
+    .heldItem = ITEM_CHOICE_BAND,
+    .ability = ABILITY_WATER_VEIL,
+    .moves = {MOVE_AQUA_JET, MOVE_NONE, MOVE_NONE, MOVE_NONE},
+    .nature = TRAINER_PARTY_NATURE(NATURE_ADAMANAT),
     }
 };
 
@@ -7669,16 +7697,28 @@ static const struct TrainerMonNoItemDefaultMoves sParty_GruntJaggedPass[] = {
     }
 };
 
-static const struct TrainerMonNoItemDefaultMoves sParty_Marc[] = {
+static const struct TrainerMonCustomized sParty_Marc[] = {
     {
-    .iv = 120,
-    .lvl = 8,
-    .species = SPECIES_GEODUDE,
+    .ball = ITEM_POKE_BALL,
+    .ev = TRAINER_PARTY_EVS(32, 32, 32, 32, 0, 0),
+    .iv = TRAINER_PARTY_IVS(20, 25, 20, 15, 0, 0),
+    .lvl = 10,
+    .species = SPECIES_PAWNIARD,
+    .heldItem = ITEM_RAZOR_FANG,
+    .ability = ABILITY_INNER_FOCUS,
+    .moves = {MOVE_FLING, MOVE_METAL_CLAW, MOVE ASSURANCE, MOVE_THIEF},
+    .nature = TRAINER_PARTY_NATURE(NATURE_ADAMANT),
     },
     {
-    .iv = 130,
-    .lvl = 8,
-    .species = SPECIES_GEODUDE,
+    .ball = ITEM_POKE_BALL,
+    .ev = TRAINER_PARTY_EVS(32, 32, 0, 32, 0, 32),
+    .iv = TRAINER_PARTY_IVS(20, 25, 0, 15, 0, 20),
+    .lvl = 10,
+    .species = SPECIES_RIOLU,
+    .heldItem = ITEM_SILK_SCARF,
+    .ability = ABILITY_STEADFAST,
+    .moves = {MOVE_FAKE_OUT, MOVE_COUNTER, MOVE_BRICK_BREAK, MOVE_SWAGGER},
+    .nature = TRAINER_PARTY_NATURE(NATURE_JOLLY),
     }
 };
 
