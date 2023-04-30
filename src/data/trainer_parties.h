@@ -4253,7 +4253,7 @@ static const struct TrainerMonCustomized sParty_Josh[] = {
     .ev = TRAINER_PARTY_EVS(0, 0, 48, 64, 64, 0),
     .iv = TRAINER_PARTY_IVS(20, 20, 20, 20, 20, 20),
     .lvl = 10,
-    .species = SPECIES_CHARCADET,
+    .species = SPECIES_VULPIX,
     .heldItem = ITEM_CHARCOAL,
     .ability = ABILITY_FLASH_FIRE,
     .moves = {MOVE_EMBER, MOVE_PROTECT, MOVE_DESTINY_BOND, MOVE_HELPING_HAND},
@@ -4261,8 +4261,8 @@ static const struct TrainerMonCustomized sParty_Josh[] = {
     },
     {
     .ball = ITEM_POKE_BALL,
-    .ev = TRAINER_PARTY_EVS(),
-    .iv = TRAINER_PARTY_IVS(),
+    .ev = TRAINER_PARTY_EVS(0, 0, 0, 0, 0, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31 ,31 ,31 ,31, 31),
     .lvl = 10,
     .species = SPECIES_ESPURR,
     .heldItem = ITEM_TWISTED_SPOON,
@@ -4282,18 +4282,18 @@ static const struct TrainerMonCustomized sParty_Tommy[] = {
     .heldItem = ITEM_BLACK_SLUDGE,
     .ability = ABILITY_EFFECT_SPORE,
     .moves = {MOVE_RAGE_POWDER, MOVE_SPORE, MOVE_ABSORB, MOVE_POLLEN_PUFF},
-    .nature = TRAINER_PARTY_NATURE(NATURE_),
+    .nature = TRAINER_PARTY_NATURE(NATURE_BOLD),
     },
     {
     .ball = ITEM_POKE_BALL,
     .ev = TRAINER_PARTY_EVS(0, 252, 0, 0, 0, 0),
     .iv = TRAINER_PARTY_IVS(0, 31, 0, 0, 0, 0),
     .lvl = 10,
-    .species = SPECIES_FINIZEN,
+    .species = SPECIES_PIPLUP,
     .heldItem = ITEM_CHOICE_BAND,
-    .ability = ABILITY_WATER_VEIL,
+    .ability = ABILITY_TORRENT,
     .moves = {MOVE_AQUA_JET, MOVE_NONE, MOVE_NONE, MOVE_NONE},
-    .nature = TRAINER_PARTY_NATURE(NATURE_ADAMANAT),
+    .nature = TRAINER_PARTY_NATURE(NATURE_ADAMANT),
     }
 };
 
@@ -7706,7 +7706,7 @@ static const struct TrainerMonCustomized sParty_Marc[] = {
     .species = SPECIES_PAWNIARD,
     .heldItem = ITEM_RAZOR_FANG,
     .ability = ABILITY_INNER_FOCUS,
-    .moves = {MOVE_FLING, MOVE_METAL_CLAW, MOVE ASSURANCE, MOVE_THIEF},
+    .moves = {MOVE_FLING, MOVE_METAL_CLAW, MOVE_ASSURANCE, MOVE_THIEF},
     .nature = TRAINER_PARTY_NATURE(NATURE_ADAMANT),
     },
     {
