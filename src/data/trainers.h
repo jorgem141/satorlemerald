@@ -3189,7 +3189,7 @@ const struct Trainer gTrainers[] = {
         .trainerName = _("KIPP"),
         .items = {ITEM_POTION, ITEM_POTION, ITEM_NONE, ITEM_NONE},
         .doubleBattle = TRUE,
-        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_VIABILITY,
+        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_VIABILITY | AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_HELP_PARTNER | AI_FLAG_ACE_POKEMON | AI_FLAG_SETUP_FIRST_TURN,
         .party = EVERYTHING_CUSTOMIZED(sParty_Roxanne1),
     },
 
@@ -3848,9 +3848,9 @@ const struct Trainer gTrainers[] = {
         .trainerPic = TRAINER_PIC_YOUNGSTER,
         .trainerName = _("JOSH"),
         .items = {},
-        .doubleBattle = FALSE,
-        .aiFlags = AI_FLAG_CHECK_BAD_MOVE,
-        .party = NO_ITEM_CUSTOM_MOVES(sParty_Josh),
+        .doubleBattle = TRUE,
+        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_VIABILITY | AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_HELP_PARTNER | AI_FLAG_ACE_POKEMON | AI_FLAG_SETUP_FIRST_TURN,
+        .party = EVERYTHING_CUSTOMIZED(sParty_Josh),
     },
 
     [TRAINER_TOMMY] =
@@ -3860,9 +3860,9 @@ const struct Trainer gTrainers[] = {
         .trainerPic = TRAINER_PIC_YOUNGSTER,
         .trainerName = _("TOMMY"),
         .items = {},
-        .doubleBattle = FALSE,
-        .aiFlags = AI_FLAG_CHECK_BAD_MOVE,
-        .party = NO_ITEM_DEFAULT_MOVES(sParty_Tommy),
+        .doubleBattle = TRUE,
+        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_VIABILITY | AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_HELP_PARTNER | AI_FLAG_ACE_POKEMON | AI_FLAG_SETUP_FIRST_TURN,
+        .party = EVERYTHING_CUSTOMIZED(sParty_Tommy),
     },
 
     [TRAINER_JOEY] =
@@ -6860,9 +6860,9 @@ const struct Trainer gTrainers[] = {
         .trainerPic = TRAINER_PIC_HIKER,
         .trainerName = _("MARC"),
         .items = {},
-        .doubleBattle = FALSE,
-        .aiFlags = AI_FLAG_CHECK_BAD_MOVE,
-        .party = NO_ITEM_DEFAULT_MOVES(sParty_Marc),
+        .doubleBattle = TRUE,
+        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_VIABILITY | AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_HELP_PARTNER | AI_FLAG_ACE_POKEMON | AI_FLAG_SETUP_FIRST_TURN,
+        .party = EVERYTHING_CUSTOMIZED(sParty_Marc),
     },
 
     [TRAINER_BRENDEN] =
