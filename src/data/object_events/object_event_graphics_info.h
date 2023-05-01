@@ -2464,7 +2464,7 @@ const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Xin = {
     .oam = &gObjectEventBaseOam_16x32,
     .subspriteTables = sOamTables_16x32,
     .anims = sAnimTable_Standard,
-    .images = sPicTable_Brawly,
+    .images = sPicTable_Xin,
     .affineAnims = gDummySpriteAffineAnimTable,
 };
 
