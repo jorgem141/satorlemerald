@@ -3411,27 +3411,50 @@ static const struct TrainerMonCustomized sParty_Roxanne1[] = {
     }
 };
 
-static const struct TrainerMonItemCustomMoves sParty_Brawly1[] = {
+static const struct TrainerMonCustomized sParty_Brawly1[] = {
     {
-    .iv = 100,
-    .lvl = 16,
-    .species = SPECIES_MACHOP,
-    .heldItem = ITEM_NONE,
-    .moves = {MOVE_KARATE_CHOP, MOVE_LOW_KICK, MOVE_SEISMIC_TOSS, MOVE_BULK_UP}
+    .ball = ITEM_MOON_BALL,
+    .ev = TRAINER_PARTY_EVS(4, 252, 0, 252, 0, 0),
+    .iv = TRAINER_PARTY_IVS(25, 25, 25 ,25 ,25, 25),
+    .lvl = 18,
+    .species = SPECIES_SANDSHEW_ALOLA,
+    .heldItem = ITEM_METRONOME,
+    .ability = ABILITY_SNOW_CLOAK,
+    .moves = {MOVE_METAL_CLAW, MOVE_ICICLE_SPEAR, MOVE_RAPID_SPIN, MOVE_BULLDOZE},
+    .nature = TRAINER_PARTY_NATURE(NATURE_JOLLY),
     },
     {
-    .iv = 100,
-    .lvl = 16,
-    .species = SPECIES_MEDITITE,
-    .heldItem = ITEM_NONE,
-    .moves = {MOVE_FOCUS_PUNCH, MOVE_LIGHT_SCREEN, MOVE_REFLECT, MOVE_BULK_UP}
+    .ball = ITEM_MOON_BALL,
+    .ev = TRAINER_PARTY_EVS(64, 128, 0, 64, 128, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31, 0, 31, 31, 0),
+    .lvl = 18,
+    .species = SPECIES_GROWLITHE,
+    .heldItem = ITEM_ORAN_BERRY,
+    .ability = ABILITY_FLASH_FIRE,
+    .moves = {MOVE_FIRE_SPIN, MOVE_MORNING_SUN, MOVE_SUNNY_DAY, MOVE_BITE},
+    .nature = TRAINER_PARTY_NATURE(NATURE_QUIET),
     },
     {
-    .iv = 200,
+    .ball = ITEM_MOON_BALL,
+    .ev = TRAINER_PARTY_EVS(252, 252, 4, 0, 0, 0),
+    .iv = TRAINER_PARTY_IVS(25, 25, 25, 31, 31, 31),
     .lvl = 19,
-    .species = SPECIES_MAKUHITA,
-    .heldItem = ITEM_SITRUS_BERRY,
-    .moves = {MOVE_ARM_THRUST, MOVE_VITAL_THROW, MOVE_REVERSAL, MOVE_BULK_UP}
+    .species = SPECIES_CLOBBOPUS,
+    .heldItem = ITEM_MUSCLE_BAND,
+    .ability = ABILITY_TECHNICIAN,
+    .moves = {MOVE_FEINT, MOVE_ICE_PUNCH, MOVE_BRICK_BREAK, MOVE_PAYBACK},
+    .nature = TRAINER_PARTY_NATURE(NATURE_ADAMANT),
+    },
+    {
+    .ball = ITEM_MOON_BALL,
+    .ev = TRAINER_PARTY_EVS(4, 242, 4, 0, 0, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+    .lvl = 21,
+    .species = SPECIES_PANCHAM,
+    .heldItem = ITEM_SILK_SCARF,
+    .ability = ABILITY_SCRAPPY,
+    .moves = {MOVE_MEGA_PUNCH, MOVE_DRAIN_PUNCH, MOVE_WORK_UP, MOVE_TAUNT},
+    .nature = TRAINER_PARTY_NATURE(NATURE_ADAMANT),
     }
 };
 
