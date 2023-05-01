@@ -377,3 +377,5 @@ const u32 gObjectEventPic_HoOh[] = INCBIN_U32("graphics/object_events/pics/pokem
 const u16 gObjectEventPal_HoOh[] = INCBIN_U16("graphics/object_events/palettes/ho_oh.gbapal");
 const u32 gObjectEventPic_Kipp[] = INCBIN_U32("graphics/object_events/pics/people/gym_leaders/kipp.4bpp");
 const u16 gObjectEventPalette_Kipp[] = INCBIN_U16("graphics/object_events/pics/people/gym_leaders/kipp.gbapal");
+const u32 gObjectEventPic_Xin[] = INCBIN_U32("graphics/object_events/pics/people/gym_leaders/xin.4bpp");
+const u16 gObjectEventPalette_Xin[] = INCBIN_U16("graphics/object_events/pics/people/gym_leaders/xin.gbapal");
