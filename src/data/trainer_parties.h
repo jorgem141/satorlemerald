@@ -2155,8 +2155,15 @@ static const struct TrainerMonNoItemDefaultMoves sParty_Tony5[] = {
 static const struct TrainerMonNoItemDefaultMoves sParty_Takao[] = {
     {
     .iv = 127,
-    .lvl = 13,
-    .species = SPECIES_MACHOP,
+    .lvl = 15,
+    .species = SPECIES_EKANS,
+    },
+    {
+
+    .iv = 127,
+    .lvl = 15,
+    .species = SPECIES_SPINARAK,
+
     }
 };
 
@@ -5663,19 +5670,36 @@ static const struct TrainerMonItemCustomMoves sParty_Lao5[] = {
     }
 };
 
-static const struct TrainerMonNoItemDefaultMoves sParty_Jocelyn[] = {
+static const struct TrainerMonCustomized sParty_Jocelyn[] = {
     {
-    .iv = 127,
-    .lvl = 13,
-    .species = SPECIES_MEDITITE,
+    .ball = ITEM_DUSK_BALL,
+    .ev = TRAINER_PARTY_EVS(4, 0, 0, 252, 252, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+    .lvl = 16,
+    .species = SPECIES_GASTLY,
+    .heldItem = ITEM_NONE,
+    .ability = ABILITY_LEVITATE,
+    .moves = {MOVE_HEX, MOVE_CONFUSE_RAY, MOVE_HYPNOSIS, MOVE_MEAN_LOOK},
+    .nature = TRAINER_PARTY_NATURE(NATURE_TIMID),
+    },
+    {
+    .ball = ITEM_DUSK_BALL,
+    .ev = TRAINER_PARTY_EVS(4, 0, 0, 252, 252, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+    .lvl = 16,
+    .species = SPECIES_GASTLY,
+    .heldItem = ITEM_NONE,
+    .ability = ABILITY_LEVITATE,
+    .moves = {MOVE_HEX, MOVE_CONFUSE_RAY, MOVE_HYPNOSIS, MOVE_MEAN_LOOK},
+    .nature = TRAINER_PARTY_NATURE(NATURE_TIMID),
     }
 };
 
 static const struct TrainerMonNoItemDefaultMoves sParty_Laura[] = {
     {
     .iv = 150,
-    .lvl = 13,
-    .species = SPECIES_MEDITITE,
+    .lvl = 15,
+    .species = SPECIES_SABLEYE,
     }
 };
 
@@ -7745,27 +7769,56 @@ static const struct TrainerMonCustomized sParty_Marc[] = {
     }
 };
 
-static const struct TrainerMonNoItemDefaultMoves sParty_Brenden[] = {
+static const struct TrainerMonCustomized sParty_Brenden[] = {
     {
-    .iv = 100,
-    .lvl = 13,
-    .species = SPECIES_MACHOP,
+    .ball = ITEM_POKE_BALL,
+    .ev = TRAINER_PARTY_EVS(0, 0, 128, 0, 128, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+    .lvl = 15,
+    .species = SPECIES_CHINCHOU,
+    .heldItem = ITEM_MAGNET,
+    .ability = ABILITY_VOLT_ABSORB,
+    .moves = {MOVE_THUNDER_SHOCK, MOVE_SCALD, MOVE_THUNDER_WAVE, MOVE_PROTECT},
+    .nature = TRAINER_PARTY_NATURE(NATURE_TIMID),
     }
 };
 
-static const struct TrainerMonNoItemDefaultMoves sParty_Lilith[] = {
+static const struct TrainerMonCustomized sParty_Lilith[] = {
     {
-    .iv = 150,
-    .lvl = 13,
-    .species = SPECIES_MEDITITE,
+    .ball = ITEM_POKE_BALL,
+    .ev = TRAINER_PARTY_EVS(0, 0, 128, 0, 128, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+    .lvl = 15,
+    .species = SPECIES_LITWICK,
+    .heldItem = ITEM_SPELL_TAG,
+    .ability = ABILITY_FLASH_FIRE,
+    .moves = {MOVE_HEX, MOVE_INCINERATE, MOVE_CONFUSE_RAY, MOVE_PROTECT},
+    .nature = TRAINER_PARTY_NATURE(NATURE_TIMID),
     }
 };
 
-static const struct TrainerMonNoItemDefaultMoves sParty_Cristian[] = {
+static const struct TrainerMonCustomized sParty_Cristian[] = {
     {
-    .iv = 200,
-    .lvl = 13,
-    .species = SPECIES_MAKUHITA,
+    .ball = ITEM_LOVE_BALL,
+    .ev = TRAINER_PARTY_EVS(252, 252, 4, 0, 0, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 0, 15, 25),
+    .lvl = 17,
+    .species = SPECIES_IMPIDIMP,
+    .heldItem = ITEM_LIGHT_CLAY,
+    .ability = ABILITY_PRANKSTER,
+    .moves = {MOVE_LIGHT_SCREEN, MOVE_REFLECT, MOVE_FAKE_OUT, MOVE_SUCKER_PUNCH},
+    .nature = TRAINER_PARTY_NATURE(NATURE_IMPISH),
+    },
+    {
+    .ball = ITEM_LOVE_BALL,
+    .ev = TRAINER_PARTY_EVS(252, 0, 0, 0, 252, 4),
+    .iv = TRAINER_PARTY_IVS(31, 31, 30, 30, 30, 31),
+    .lvl = 17,
+    .species = SPECIES_CLAMPERL,
+    .heldItem = ITEM_DEEP_SEA_TOOTH,
+    .ability = ABILITY_SHELL_ARMOR,
+    .moves = {MOVE_SCALD, MOVE_RAIN_DANCE, MOVE_HIDDEN_POWER, MOVE_ROUND},
+    .nature = TRAINER_PARTY_NATURE(NATURE_MODEST),
     }
 };
 
