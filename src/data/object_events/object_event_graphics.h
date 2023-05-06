@@ -379,3 +379,5 @@ const u32 gObjectEventPic_Kipp[] = INCBIN_U32("graphics/object_events/pics/peopl
 const u16 gObjectEventPalette_Kipp[] = INCBIN_U16("graphics/object_events/pics/people/gym_leaders/kipp.gbapal");
 const u32 gObjectEventPic_Xin[] = INCBIN_U32("graphics/object_events/pics/people/gym_leaders/xin.4bpp");
 const u16 gObjectEventPalette_Xin[] = INCBIN_U16("graphics/object_events/pics/people/gym_leaders/xin.gbapal");
+const u32 gObjectEventPic_Juju[] = INCBIN_U32("graphics/object_events/pics/people/gym_leaders/juju.4bpp");
+const u16 gObjectEventPalette_Juju[] = INCBIN_U16("graphics/object_events/pics/people/gym_leaders/juju.gbapal");

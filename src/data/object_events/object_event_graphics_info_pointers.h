@@ -489,7 +489,8 @@ const struct ObjectEventGraphicsInfo *const gObjectEventGraphicsInfoPointers[NUM
     [OBJ_EVENT_GFX_LUGIA] =                    &gObjectEventGraphicsInfo_Lugia,
     [OBJ_EVENT_GFX_HOOH] =                     &gObjectEventGraphicsInfo_HoOh,
     [OBJ_EVENT_GFX_KIPP] =                     &gObjectEventGraphicsInfo_Kipp,
-    [OBJ_EVENT_GFX_XIN] =                      &gObjectEventGraphicsInfo_Xin,   
+    [OBJ_EVENT_GFX_XIN] =                      &gObjectEventGraphicsInfo_Xin,
+    [OBJ_EVENT_GFX_JUJU] =                     &gObjectEventGraphicsInfo_Juju,   
 };
 
 const struct ObjectEventGraphicsInfo *const gMauvilleOldManGraphicsInfoPointers[] = {
