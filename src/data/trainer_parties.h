@@ -3465,34 +3465,50 @@ static const struct TrainerMonCustomized sParty_Brawly1[] = {
     }
 };
 
-static const struct TrainerMonItemCustomMoves sParty_Wattson1[] = {
+static const struct TrainerMonCustomized sParty_Wattson1[] = {
     {
-    .iv = 200,
-    .lvl = 20,
-    .species = SPECIES_VOLTORB,
-    .heldItem = ITEM_NONE,
-    .moves = {MOVE_ROLLOUT, MOVE_SPARK, MOVE_SELF_DESTRUCT, MOVE_SHOCK_WAVE}
+    .ball = ITEM_CHERISH_BALL,
+    .ev = TRAINER_PARTY_EVS(4, 0, 0, 252, 252, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+    .lvl = 23,
+    .species = SPECIES_NINETALES_ALOLAN,
+    .heldItem = ITEM_LIGHT_CLAY,
+    .ability = ABILITY_SNOW_WARNING,
+    .moves = {MOVE_AURORA_VEIL, MOVE_ICY_WIND, MOVE_DAZZLING_GLEAM, MOVE_ATTRACT},
+    .nature = TRAINER_PARTY_NATURE(NATURE_TIMID),
     },
     {
-    .iv = 200,
-    .lvl = 20,
-    .species = SPECIES_ELECTRIKE,
-    .heldItem = ITEM_NONE,
-    .moves = {MOVE_SHOCK_WAVE, MOVE_LEER, MOVE_QUICK_ATTACK, MOVE_HOWL}
+    .ball = ITEM_CHERISH_BALL,
+    .ev = TRAINER_PARTY_EVS(4, 252, 0, 252, 0, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+    .lvl = 23,
+    .species = SPECIES_WEAVILE,
+    .heldItem = ITEM_RAZOR_CLAW,
+    .ability = ABILITY_PRESSURE,
+    .moves = {MOVE_KNOCK_OFF, MOVE_ICE_SHARD, MOVE_PURSUIT, MOVE_SHADOW_CLAW},
+    .nature = TRAINER_PARTY_NATURE(NATURE_ADAMANT),
     },
     {
-    .iv = 220,
-    .lvl = 22,
-    .species = SPECIES_MAGNETON,
-    .heldItem = ITEM_NONE,
-    .moves = {MOVE_SUPERSONIC, MOVE_SHOCK_WAVE, MOVE_THUNDER_WAVE, MOVE_SONIC_BOOM}
+    .ball = ITEM_CHERISH_BALL,
+    .ev = TRAINER_PARTY_EVS(0, 252, 4, 252, 0, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+    .lvl = 25,
+    .species = SPECIES_RHYHORN,
+    .heldItem = ITEM_MUSCLE_BAND,
+    .ability = ABILITY_ROCK_HEAD,
+    .moves = {MOVE_TAKE_DOWN, MOVE_SMACK_DOWN, MOVE_ROCK_POLISH, MOVE_THUNDER_FANG},
+    .nature = TRAINER_PARTY_NATURE(NATURE_JOLLY),
     },
     {
-    .iv = 250,
-    .lvl = 24,
-    .species = SPECIES_MANECTRIC,
-    .heldItem = ITEM_SITRUS_BERRY,
-    .moves = {MOVE_QUICK_ATTACK, MOVE_THUNDER_WAVE, MOVE_SHOCK_WAVE, MOVE_HOWL}
+    .ball = ITEM_CHERISH_BALL,
+    .ev = TRAINER_PARTY_EVS(252, 0, 0, 4, 252, 0),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+    .lvl = 27,
+    .species = SPECIES_FLETCHINDER,
+    .heldItem = ITEM_LIFE_ORB,
+    .ability = ABILITY_GALE_WINGS,
+    .moves = {MOVE_ROOST, MOVE_FLAMETHROWER, MOVE_HURRICANE, MOVE_SWIFT},
+    .nature = TRAINER_PARTY_NATURE(NATURE_MODEST),
     }
 };
 
