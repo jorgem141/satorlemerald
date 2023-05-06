@@ -439,6 +439,7 @@ const u8 gInitialMovementTypeFacingDirections[] = {
 #define OBJ_EVENT_PAL_TAG_RS_MAY                  0x1123
 #define OBJ_EVENT_PAL_KIPP                        0x1124
 #define OBJ_EVENT_PAL_XIN                         0x1125
+#define OBJ_EVENT_PAL_JUJU                        0x1126
 #define OBJ_EVENT_PAL_TAG_NONE                    0x11FF
 
 #include "data/field_effects/field_effect_object_template_pointers.h"
