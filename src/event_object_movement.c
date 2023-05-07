@@ -488,6 +488,7 @@ static const struct SpritePalette sObjectEventSpritePalettes[] = {
     {gObjectEventPal_RubySapphireMay,       OBJ_EVENT_PAL_TAG_RS_MAY},
     {gObjectEventPalette_Kipp,              OBJ_EVENT_PAL_KIPP},
     {gObjectEventPalette_Xin,               OBJ_EVENT_PAL_XIN},
+    {gObjectEventPalette_Juju,              OBJ_EVENT_PAL_JUJU},
 #ifdef BUGFIX
     {NULL,                                  OBJ_EVENT_PAL_TAG_NONE},
 #else
