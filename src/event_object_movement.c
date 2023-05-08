@@ -440,6 +440,7 @@ const u8 gInitialMovementTypeFacingDirections[] = {
 #define OBJ_EVENT_PAL_KIPP                        0x1124
 #define OBJ_EVENT_PAL_XIN                         0x1125
 #define OBJ_EVENT_PAL_JUJU                        0x1126
+#define OBJ_EVENT_PAL_RALI                        0x1127
 #define OBJ_EVENT_PAL_TAG_NONE                    0x11FF
 
 #include "data/field_effects/field_effect_object_template_pointers.h"
@@ -489,6 +490,7 @@ static const struct SpritePalette sObjectEventSpritePalettes[] = {
     {gObjectEventPalette_Kipp,              OBJ_EVENT_PAL_KIPP},
     {gObjectEventPalette_Xin,               OBJ_EVENT_PAL_XIN},
     {gObjectEventPalette_Juju,              OBJ_EVENT_PAL_JUJU},
+    {gObjectEventPalette_Rali,              OBJ_EVENT_PAL_RALI},
 #ifdef BUGFIX
     {NULL,                                  OBJ_EVENT_PAL_TAG_NONE},
 #else
