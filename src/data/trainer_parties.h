@@ -3534,34 +3534,61 @@ static const struct TrainerMonCustomized sParty_Wattson1[] = {
     }
 };
 
-static const struct TrainerMonItemCustomMoves sParty_Flannery1[] = {
+static const struct TrainerMonCustomized sParty_Flannery1[] = {
     {
-    .iv = 200,
-    .lvl = 24,
-    .species = SPECIES_NUMEL,
-    .heldItem = ITEM_NONE,
-    .moves = {MOVE_OVERHEAT, MOVE_TAKE_DOWN, MOVE_MAGNITUDE, MOVE_SUNNY_DAY}
-    },
-    {
-    .iv = 200,
-    .lvl = 24,
-    .species = SPECIES_SLUGMA,
-    .heldItem = ITEM_NONE,
-    .moves = {MOVE_OVERHEAT, MOVE_SMOG, MOVE_LIGHT_SCREEN, MOVE_SUNNY_DAY}
-    },
-    {
-    .iv = 250,
-    .lvl = 26,
-    .species = SPECIES_CAMERUPT,
-    .heldItem = ITEM_NONE,
-    .moves = {MOVE_OVERHEAT, MOVE_TACKLE, MOVE_SUNNY_DAY, MOVE_ATTRACT}
-    },
-    {
-    .iv = 250,
+    .ball = ITEM_LOVE_BALL,
+    .ev = TRAINER_PARTY_EVS(36, 0, 236, 0, 40, 196),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
     .lvl = 29,
-    .species = SPECIES_TORKOAL,
-    .heldItem = ITEM_WHITE_HERB,
-    .moves = {MOVE_OVERHEAT, MOVE_SUNNY_DAY, MOVE_BODY_SLAM, MOVE_ATTRACT}
+    .species = SPECIES_BUDEW,
+    .heldItem = ITEM_BLACK_SLUDGE,
+    .ability = ABILITY_POISON_POINT,
+    .moves = {MOVE_TOXIC_SPIKES, MOVE_GIGA_DRAIN, MOVE_SLEEP_POWDER, MOVE_SLUDGE_BOMB},
+    .nature = TRAINER_PARTY_NATURE(NATURE_BOLD),
+    },
+    {
+    .ball = ITEM_LOVE_BALL,
+    .ev = TRAINER_PARTY_EVS(236, 0, 156, 36, 0, 76),
+    .iv = TRAINER_PARTY_IVS(31, 0, 31, 31, 31, 31),
+    .lvl = 27,
+    .species = SPECIES_TOGEPI,
+    .heldItem = ITEM_SCOPE_LENS,
+    .ability = ABILITY_SUPER_LUCK,
+    .moves = {MOVE_DAZZLING_GLEAM, MOVE_FIRE_BLAST, MOVE_SOFTBOILED, MOVE_NASTY_PLOT},
+    .nature = TRAINER_PARTY_NATURE(NATURE_BOLD),
+    },
+    {
+    .ball = ITEM_LOVE_BALL,
+    .ev = TRAINER_PARTY_EVS(0, 252, 0, 252, 0, 4),
+    .iv = TRAINER_PARTY_IVS(0, 31, 31, 31, 31, 31),
+    .lvl = 1,
+    .species = SPECIES_ARON,
+    .heldItem = ITEM_SHELL_BELL,
+    .ability = ABILITY_STURDY,
+    .moves = {MOVE_ENDEAVOR, MOVE_TACKLE, MOVE_NONE, MOVE_NONE},
+    .nature = TRAINER_PARTY_NATURE(NATURE_ADAMANT),
+    },
+    {
+    .ball = ITEM_LOVE_BALL,
+    .ev = TRAINER_PARTY_EVS(132, 124, 128, 0, 0, 128),
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+    .lvl = 31,
+    .species = SPECIES_MUNCHLAX,
+    .heldItem = ITEM_EVIOLITE,
+    .ability = ABILITY_THICK_FAT,
+    .moves = {MOVE_CURSE, MOVE_BODY_SLAM, MOVE_REST, MOVE_SLEEP_TALK},
+    .nature = TRAINER_PARTY_NATURE(NATURE_ADAMANT),
+    },
+    {
+    .ball = ITEM_LOVE_BALL,
+    .ev = TRAINER_PARTY_EVS(4, 0, 0, 252, 252, 0),
+    .iv = TRAINER_PARTY_IVS(31, 0, 31, 31, 31, 31),
+    .lvl = 33,
+    .species = SPECIES_SHAYMIN,
+    .heldItem = ITEM_LIFE_ORB,
+    .ability = ABILITY_NATURAL_CURE,
+    .moves = {MOVE_SEED_FLARE, MOVE_EARTH_POWER, MOVE_AIR_SLASH, MOVE_SYNTHESIS},
+    .nature = TRAINER_PARTY_NATURE(NATURE_MODEST),
     }
 };
 
