@@ -1117,5 +1117,17 @@ void UpdatePaletteGammaType(u8 index, u8 gammaType)
 void UpdatePaletteGammaType(u8 index, u8 gammaType)
 {
     if (index != 0xFF)
+        sBasePaletteGammaTypes[index + 16] = gammaType;
+}
+
+void UpdatePaletteGammaType(u8 index, u8 gammaType)
+{
+    if (index != 0xFF)
+        sBasePaletteGammaTypes[index + 16] = gammaType;
+}
+
+void UpdatePaletteGammaType(u8 index, u8 gammaType)
+{
+    if (index != 0xFF)
         sBasePaletteColorMapTypes[index + 16] = gammaType;
 }
