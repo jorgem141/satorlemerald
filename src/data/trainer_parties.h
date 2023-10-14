@@ -3554,7 +3554,7 @@ static const struct TrainerMonCustomized sParty_Flannery1[] = {
     .species = SPECIES_TOGEPI,
     .heldItem = ITEM_SCOPE_LENS,
     .ability = ABILITY_SUPER_LUCK,
-    .moves = {MOVE_DAZZLING_GLEAM, MOVE_FIRE_BLAST, MOVE_SOFTBOILED, MOVE_NASTY_PLOT},
+    .moves = {MOVE_DAZZLING_GLEAM, MOVE_FIRE_BLAST, MOVE_SOFT_BOILED, MOVE_NASTY_PLOT},
     .nature = TRAINER_PARTY_NATURE(NATURE_BOLD),
     },
     {
