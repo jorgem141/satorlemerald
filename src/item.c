@@ -884,12 +884,12 @@ u16 ItemId_GetPrice(u16 itemId)
     return gItems[SanitizeItemId(itemId)].price;
 }
 
-u8 ItemId_GetHoldEffect(u16 itemId)
+u32 ItemId_GetHoldEffect(u32 itemId)
 {
     return gItems[SanitizeItemId(itemId)].holdEffect;
 }
 
-u8 ItemId_GetHoldEffectParam(u16 itemId)
+u32 ItemId_GetHoldEffectParam(u32 itemId)
 {
     return gItems[SanitizeItemId(itemId)].holdEffectParam;
 }
@@ -902,12 +902,6 @@ const u8 *ItemId_GetDescription(u16 itemId)
 u8 ItemId_GetImportance(u16 itemId)
 {
     return gItems[SanitizeItemId(itemId)].importance;
-}
-
-// Unused
-u8 ItemId_GetRegistrability(u16 itemId)
-{
-    return gItems[SanitizeItemId(itemId)].registrability;
 }
 
 u8 ItemId_GetPocket(u16 itemId)
@@ -941,7 +935,7 @@ u8 ItemId_GetBattleUsage(u16 itemId)
             case ITEM_EFFECT_CURE_POISON:
             case ITEM_EFFECT_CURE_SLEEP:
             case ITEM_EFFECT_CURE_BURN:
-            case ITEM_EFFECT_CURE_FREEZE:
+            case ITEM_EFFECT_CURE_FREEZE_FROSTBITE:
             case ITEM_EFFECT_CURE_PARALYSIS:
             case ITEM_EFFECT_CURE_ALL_STATUS:
             case ITEM_EFFECT_CURE_CONFUSION:
@@ -962,7 +956,7 @@ u8 ItemId_GetSecondaryId(u16 itemId)
     return gItems[SanitizeItemId(itemId)].secondaryId;
 }
 
-u8 ItemId_GetFlingPower(u16 itemId)
+u32 ItemId_GetFlingPower(u32 itemId)
 {
     return gItems[SanitizeItemId(itemId)].flingPower;
 }
@@ -976,7 +970,7 @@ u32 GetItemStatus1Mask(u16 itemId)
         case ITEM3_PARALYSIS:
             return STATUS1_PARALYSIS;
         case ITEM3_FREEZE:
-            return STATUS1_FREEZE;
+            return STATUS1_FREEZE | STATUS1_FROSTBITE;
         case ITEM3_BURN:
             return STATUS1_BURN;
         case ITEM3_POISON:

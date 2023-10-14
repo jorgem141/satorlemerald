@@ -135,11 +135,11 @@ static const struct SpriteFrameImage sSpriteImageTable_ExclamationQuestionMark[]
 {
     {
         .data = sEmotion_ExclamationMarkGfx,
-        .size = 0x80
+        .size = sizeof(sEmotion_ExclamationMarkGfx)
     },
     {
         .data = sEmotion_QuestionMarkGfx,
-        .size = 0x80
+        .size = sizeof(sEmotion_QuestionMarkGfx)
     }
 };
 
@@ -147,7 +147,7 @@ static const struct SpriteFrameImage sSpriteImageTable_HeartIcon[] =
 {
     {
         .data = sEmotion_HeartGfx,
-        .size = 0x80
+        .size = sizeof(sEmotion_HeartGfx)
     }
 };
 
@@ -705,8 +705,6 @@ u8 FldEff_ExclamationMarkIcon(void)
     u8 spriteId, paletteNum;
 
     LoadObjectEventPalette(0x1100); //LoadObjectEventPalette(OBJ_EVENT_PAL_TAG_BRENDAN)
-    UpdatePaletteGammaType(IndexOfSpritePaletteTag(0x1100), COLOR_MAP_CONTRAST);
-    UpdateSpritePaletteWithWeather(IndexOfSpritePaletteTag(0x1100));
     spriteId = CreateSpriteAtEnd(&sSpriteTemplate_ExclamationQuestionMark, 0, 0, 0x52);
 
     if (spriteId != MAX_SPRITES)
@@ -720,9 +718,6 @@ u8 FldEff_QuestionMarkIcon(void)
     u8 spriteId;
 
     LoadObjectEventPalette(0x1100); //LoadObjectEventPalette(OBJ_EVENT_PAL_TAG_BRENDAN)
-    UpdatePaletteGammaType(IndexOfSpritePaletteTag(0x1100), COLOR_MAP_CONTRAST);
-    UpdateSpritePaletteWithWeather(IndexOfSpritePaletteTag(0x1100));
-
     spriteId = CreateSpriteAtEnd(&sSpriteTemplate_ExclamationQuestionMark, 0, 0, 0x52);
 
     if (spriteId != MAX_SPRITES)
@@ -736,8 +731,6 @@ u8 FldEff_HeartIcon(void)
     u8 spriteId;
 
     LoadSpritePalette(&gObjectEventPal_Npc1);
-    UpdatePaletteGammaType(IndexOfSpritePaletteTag(0x1004), COLOR_MAP_CONTRAST);
-    UpdateSpritePaletteWithWeather(IndexOfSpritePaletteTag(0x1004));
     spriteId = CreateSpriteAtEnd(&sSpriteTemplate_HeartIcon, 0, 0, 0x52);
 
     if (spriteId != MAX_SPRITES)

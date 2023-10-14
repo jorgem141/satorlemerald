@@ -45,6 +45,8 @@ enum
     RECORDED_PARTY_INDEX,
     RECORDED_BATTLE_PALACE_ACTION,
     RECORDED_ITEM_ID,
+    RECORDED_ITEM_TARGET,
+    RECORDED_ITEM_MOVE,
 };
 
 extern u32 gRecordedBattleRngSeed;
@@ -68,13 +70,13 @@ void PlayRecordedBattle(void (*CB2_After)(void));
 u8 GetRecordedBattleFrontierFacility(void);
 u8 GetRecordedBattleFronterBrainSymbol(void);
 void RecordedBattle_SaveParties(void);
-u8 GetActiveBattlerLinkPlayerGender(void);
+u8 GetBattlerLinkPlayerGender(u32 battler);
 void RecordedBattle_ClearFrontierPassFlag(void);
 void RecordedBattle_SetFrontierPassFlagFromHword(u16 flags);
 u8 RecordedBattle_GetFrontierPassFlag(void);
 u8 GetBattleSceneInRecordedBattle(void);
 u8 GetTextSpeedInRecordedBattle(void);
-void RecordedBattle_CopyBattlerMoves(void);
+void RecordedBattle_CopyBattlerMoves(u32 battler);
 void RecordedBattle_CheckMovesetChanges(u8 mode);
 u32 GetAiScriptsInRecordedBattle(void);
 void RecordedBattle_SetPlaybackFinished(void);
