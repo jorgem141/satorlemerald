@@ -33,6 +33,10 @@ const struct SpritePalette sFogSpritePalette = {gFogPalette, 0x1201};
 const struct SpritePalette sCloudsSpritePalette = {gCloudsWeatherPalette, 0x1207};
 const struct SpritePalette sSandstormSpritePalette = {gSandstormWeatherPalette, 0x1204};
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> 2a4f6600f074f5fcd9aca7c93e23c99f15543061
 //------------------------------------------------------------------------------
 // WEATHER_SUNNY_CLOUDS
 //------------------------------------------------------------------------------
@@ -1460,7 +1464,7 @@ static void CreateFogHorizontalSprites(void)
                 sprite->x = (i % 5) * 64 + 32;
                 sprite->y = (i / 5) * 64 + 32;
                 gWeatherPtr->sprites.s2.fogHSprites[i] = sprite;
-                sprite->oam.paletteNum = gWeatherPtr->altGammaSpritePalIndex;
+                sprite->oam.paletteNum = gWeatherPtr->contrastColorMapSpritePalIndex;
             }
             else
             {

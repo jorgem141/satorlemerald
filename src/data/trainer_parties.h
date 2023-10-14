@@ -2187,9 +2187,8 @@ static const struct TrainerMon sParty_Atsushi[] = {
     }
 };
 
-static const struct TrainerMonNoItemCustomMoves sParty_Kirk[] = {
+static const struct TrainerMon sParty_Kirk[] = {
     {
-    .iv = TRAINER_PARTY_IVS(12, 12, 12, 12, 12, 12),
     .lvl = 17,
     .species = SPECIES_ELECTRIKE,
     .moves = {MOVE_QUICK_ATTACK, MOVE_THUNDER_WAVE, MOVE_SPARK, MOVE_LEER}
@@ -4075,7 +4074,7 @@ static const struct TrainerMon sParty_Billy[] = {
     }
 };
 
-static const struct TrainerMonNoItemCustomMoves sParty_Josh[] = {
+static const struct TrainerMon sParty_Josh[] = {
     {
     .iv = TRAINER_PARTY_IVS(12, 12, 12, 12, 12, 12),
     .lvl = 10,
@@ -4118,7 +4117,7 @@ static const struct TrainerMon sParty_Joey[] = {
     }
 };
 
-static const struct TrainerMonNoItemCustomMoves sParty_Ben[] = {
+static const struct TrainerMon sParty_Ben[] = {
     {
     .iv = 150,
     .lvl = 17,
@@ -8220,7 +8219,7 @@ static const struct TrainerMon sParty_Gerald[] = {
     }
 };
 
-static const struct TrainerMonNoItemCustomMoves sParty_Vivian[] = {
+static const struct TrainerMon sParty_Vivian[] = {
     {
     .iv = TRAINER_PARTY_IVS(12, 12, 12, 12, 12, 12),
     .lvl = 17,
