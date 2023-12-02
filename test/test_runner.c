@@ -2,11 +2,12 @@
 #include "global.h"
 #include "characters.h"
 #include "gpu_regs.h"
+#include "load_save.h"
 #include "main.h"
 #include "malloc.h"
 #include "random.h"
-#include "test.h"
 #include "test_runner.h"
+#include "test/test.h"
 
 #define TIMEOUT_SECONDS 55
 
@@ -14,6 +15,16 @@ void CB2_TestRunner(void);
 
 EWRAM_DATA struct TestRunnerState gTestRunnerState;
 EWRAM_DATA struct FunctionTestRunnerState *gFunctionTestRunnerState;
+
+enum {
+    CURRENT_TEST_STATE_ESTIMATE,
+    CURRENT_TEST_STATE_RUN,
+};
+
+__attribute__((section(".persistent"))) static struct {
+    u32 address:28;
+    u32 state:1;
+} sCurrentTest = {0};
 
 void TestRunner_Battle(const struct Test *);
 
@@ -42,7 +53,56 @@ static bool32 PrefixMatch(const char *pattern, const char *string)
     }
 }
 
-enum { STATE_INIT, STATE_NEXT_TEST, STATE_REPORT_RESULT, STATE_EXIT };
+enum
+{
+    STATE_INIT,
+    STATE_ASSIGN_TEST,
+    STATE_RUN_TEST,
+    STATE_REPORT_RESULT,
+    STATE_NEXT_TEST,
+    STATE_EXIT,
+};
+
+static u32 MinCostProcess(void)
+{
+    u32 i;
+    u32 minCost, minCostProcess;
+
+    minCost = gTestRunnerState.processCosts[0];
+    minCostProcess = 0;
+    for (i = 1; i < gTestRunnerN; i++)
+    {
+        if (gTestRunnerState.processCosts[i] < minCost)
+        {
+            minCost = gTestRunnerState.processCosts[i];
+            minCostProcess = i;
+        }
+    }
+
+    return minCostProcess;
+}
+
+// Greedily assign tests to processes based on estimated cost.
+// TODO: Make processCosts a min heap.
+static u32 AssignCostToRunner(void)
+{
+    u32 minCostProcess;
+
+    if (gTestRunnerState.test->runner == &gAssumptionsRunner)
+        return gTestRunnerI;
+
+    minCostProcess = MinCostProcess();
+
+    // XXX: If estimateCost returns only on some processes, or
+    // returns inconsistent results then processCosts will be
+    // inconsistent and some tests may not run.
+    if (gTestRunnerState.test->runner->estimateCost)
+        gTestRunnerState.processCosts[minCostProcess] += gTestRunnerState.test->runner->estimateCost(gTestRunnerState.test->data);
+    else
+        gTestRunnerState.processCosts[minCostProcess] += 1;
+
+    return minCostProcess;
+}
 
 void CB2_TestRunner(void)
 {
@@ -56,61 +116,70 @@ void CB2_TestRunner(void)
             return;
         }
 
+        MoveSaveBlocks_ResetHeap();
+        ClearSav1();
+        ClearSav2();
+
         gIntrTable[7] = Intr_Timer2;
 
-        gTestRunnerState.state = STATE_NEXT_TEST;
-        gTestRunnerState.exitCode = 0;
-        gTestRunnerState.tests = 0;
-        gTestRunnerState.passes = 0;
-        gTestRunnerState.skipFilename = NULL;
-        gTestRunnerState.test = __start_tests - 1;
-        break;
-
-    case STATE_NEXT_TEST:
-        gTestRunnerState.test++;
-
-        if (gTestRunnerState.test == __stop_tests)
+        // The current test restarted the ROM (e.g. by jumping to NULL).
+        if (sCurrentTest.address != 0)
         {
-            gTestRunnerState.state = STATE_EXIT;
-            return;
-        }
-
-        if (gTestRunnerState.test->runner != &gAssumptionsRunner
-          && !PrefixMatch(gTestRunnerArgv, gTestRunnerState.test->name))
-        {
-            return;
-        }
-
-        // Greedily assign tests to processes based on estimated cost.
-        // TODO: Make processCosts a min heap.
-        if (gTestRunnerState.test->runner != &gAssumptionsRunner)
-        {
-            u32 i;
-            u32 minCost, minCostProcess;
-            minCost = gTestRunnerState.processCosts[0];
-            minCostProcess = 0;
-            for (i = 1; i < gTestRunnerN; i++)
+            gTestRunnerState.test = __start_tests;
+            while ((uintptr_t)gTestRunnerState.test != sCurrentTest.address)
             {
-                if (gTestRunnerState.processCosts[i] < minCost)
+                AssignCostToRunner();
+                gTestRunnerState.test++;
+            }
+            if (sCurrentTest.state == CURRENT_TEST_STATE_ESTIMATE)
+            {
+                u32 runner = MinCostProcess();
+                gTestRunnerState.processCosts[runner] += 1;
+                if (runner == gTestRunnerI)
                 {
-                    minCost = gTestRunnerState.processCosts[i];
-                    minCostProcess = i;
+                    gTestRunnerState.state = STATE_REPORT_RESULT;
+                    gTestRunnerState.result = TEST_RESULT_CRASH;
+                }
+                else
+                {
+                    gTestRunnerState.state = STATE_NEXT_TEST;
                 }
             }
-
-            if (gTestRunnerState.test->runner->estimateCost)
-                gTestRunnerState.processCosts[minCostProcess] += gTestRunnerState.test->runner->estimateCost(gTestRunnerState.test->data);
             else
-                gTestRunnerState.processCosts[minCostProcess] += 1;
+            {
+                gTestRunnerState.state = STATE_REPORT_RESULT;
+                gTestRunnerState.result = TEST_RESULT_CRASH;
+            }
+        }
+        else
+        {
+            gTestRunnerState.state = STATE_ASSIGN_TEST;
+            gTestRunnerState.test = __start_tests;
+        }
+        gTestRunnerState.exitCode = 0;
+        gTestRunnerState.skipFilename = NULL;
 
-            if (minCostProcess != gTestRunnerI)
+        break;
+
+    case STATE_ASSIGN_TEST:
+        while (1)
+        {
+            if (gTestRunnerState.test == __stop_tests)
+            {
+                gTestRunnerState.state = STATE_EXIT;
                 return;
+            }
+            if (gTestRunnerState.test->runner != &gAssumptionsRunner
+              && !PrefixMatch(gTestRunnerArgv, gTestRunnerState.test->name))
+                ++gTestRunnerState.test;
+            else
+                break;
         }
 
         MgbaPrintf_(":N%s", gTestRunnerState.test->name);
-        gTestRunnerState.state = STATE_REPORT_RESULT;
         gTestRunnerState.result = TEST_RESULT_PASS;
         gTestRunnerState.expectedResult = TEST_RESULT_PASS;
+        gTestRunnerState.expectLeaks = FALSE;
         if (gTestRunnerHeadless)
             gTestRunnerState.timeoutSeconds = TIMEOUT_SECONDS;
         else
@@ -120,15 +189,36 @@ void CB2_TestRunner(void)
         REG_TM2CNT_L = UINT16_MAX - (274 * 60); // Approx. 1 second.
         REG_TM2CNT_H = TIMER_ENABLE | TIMER_INTR_ENABLE | TIMER_1024CLK;
 
+        sCurrentTest.address = (uintptr_t)gTestRunnerState.test;
+        sCurrentTest.state = CURRENT_TEST_STATE_ESTIMATE;
+
+        // If AssignCostToRunner fails, we want to report the failure.
+        gTestRunnerState.state = STATE_REPORT_RESULT;
+        if (AssignCostToRunner() == gTestRunnerI)
+            gTestRunnerState.state = STATE_RUN_TEST;
+        else
+            gTestRunnerState.state = STATE_NEXT_TEST;
+
+        break;
+
+    case STATE_RUN_TEST:
+        gTestRunnerState.state = STATE_REPORT_RESULT;
+        sCurrentTest.state = CURRENT_TEST_STATE_RUN;
+        SeedRng(0);
+        SeedRng2(0);
+        if (gTestRunnerState.test->runner->setUp)
+        {
+            gTestRunnerState.test->runner->setUp(gTestRunnerState.test->data);
+            gTestRunnerState.tearDown = TRUE;
+        }
         // NOTE: Assumes that the compiler interns __FILE__.
-        if (gTestRunnerState.skipFilename == gTestRunnerState.test->filename)
+        if (gTestRunnerState.skipFilename == gTestRunnerState.test->filename) // Assumption fails for tests in this file.
         {
             gTestRunnerState.result = TEST_RESULT_ASSUMPTION_FAIL;
+            return;
         }
         else
         {
-            if (gTestRunnerState.test->runner->setUp)
-                gTestRunnerState.test->runner->setUp(gTestRunnerState.test->data);
             gTestRunnerState.test->runner->run(gTestRunnerState.test->data);
         }
         break;
@@ -138,24 +228,56 @@ void CB2_TestRunner(void)
 
         gTestRunnerState.state = STATE_NEXT_TEST;
 
-        if (gTestRunnerState.test->runner->tearDown)
+        if (gTestRunnerState.tearDown && gTestRunnerState.test->runner->tearDown)
+        {
             gTestRunnerState.test->runner->tearDown(gTestRunnerState.test->data);
+            gTestRunnerState.tearDown = FALSE;
+        }
+
+        if (gTestRunnerState.result == TEST_RESULT_PASS
+         && !gTestRunnerState.expectLeaks)
+        {
+            const struct MemBlock *head = HeapHead();
+            const struct MemBlock *block = head;
+            do
+            {
+                if (block->magic != MALLOC_SYSTEM_ID
+                 || !(EWRAM_START <= (uintptr_t)block->next && (uintptr_t)block->next < EWRAM_END)
+                 || (block->next <= block && block->next != head))
+                {
+                    MgbaPrintf_("gHeap corrupted block at 0x%p", block);
+                    gTestRunnerState.result = TEST_RESULT_ERROR;
+                    break;
+                }
+
+                if (block->allocated)
+                {
+                    const char *location = MemBlockLocation(block);
+                    if (location)
+                        MgbaPrintf_("%s: %d bytes not freed", location, block->size);
+                    else
+                        MgbaPrintf_("<unknown>: %d bytes not freed", block->size);
+                    gTestRunnerState.result = TEST_RESULT_FAIL;
+                }
+                block = block->next;
+            }
+            while (block != head);
+        }
 
         if (gTestRunnerState.test->runner == &gAssumptionsRunner)
         {
             if (gTestRunnerState.result != TEST_RESULT_PASS)
+            {
                 gTestRunnerState.skipFilename = gTestRunnerState.test->filename;
+            }
         }
         else
         {
             const char *color;
             const char *result;
 
-            gTestRunnerState.tests++;
-
             if (gTestRunnerState.result == gTestRunnerState.expectedResult)
             {
-                gTestRunnerState.passes++;
                 color = "\e[32m";
                 MgbaPrintf_(":N%s", gTestRunnerState.test->name);
             }
@@ -208,6 +330,9 @@ void CB2_TestRunner(void)
             case TEST_RESULT_TIMEOUT:
                 result = "TIMEOUT";
                 break;
+            case TEST_RESULT_CRASH:
+                result = "CRASH";
+                break;
             default:
                 result = "UNKNOWN";
                 break;
@@ -227,6 +352,11 @@ void CB2_TestRunner(void)
 
         break;
 
+    case STATE_NEXT_TEST:
+        gTestRunnerState.state = STATE_ASSIGN_TEST;
+        gTestRunnerState.test++;
+        break;
+
     case STATE_EXIT:
         MgbaExit_(gTestRunnerState.exitCode);
         break;
@@ -236,6 +366,11 @@ void CB2_TestRunner(void)
 void Test_ExpectedResult(enum TestResult result)
 {
     gTestRunnerState.expectedResult = result;
+}
+
+void Test_ExpectLeaks(bool32 expectLeaks)
+{
+    gTestRunnerState.expectLeaks = expectLeaks;
 }
 
 static void FunctionTest_SetUp(void *data)
@@ -319,6 +454,8 @@ static void Intr_Timer2(void)
         }
         else
         {
+            if (gTestRunnerState.state == STATE_RUN_TEST)
+                gTestRunnerState.state = STATE_REPORT_RESULT;
             gTestRunnerState.result = TEST_RESULT_TIMEOUT;
             ReinitCallbacks();
             IRQ_LR = ((uintptr_t)JumpToAgbMainLoop & ~1) + 4;
@@ -328,16 +465,19 @@ static void Intr_Timer2(void)
 
 void Test_ExitWithResult(enum TestResult result, const char *fmt, ...)
 {
-    bool32 handled = FALSE;
     gTestRunnerState.result = result;
     ReinitCallbacks();
-    if (gTestRunnerState.test->runner->handleExitWithResult)
-        handled = gTestRunnerState.test->runner->handleExitWithResult(gTestRunnerState.test->data, result);
-    if (!handled && gTestRunnerState.result != gTestRunnerState.expectedResult)
+    if (gTestRunnerState.state == STATE_REPORT_RESULT
+     && gTestRunnerState.result != gTestRunnerState.expectedResult)
     {
-        va_list va;
-        va_start(va, fmt);
-        MgbaVPrintf_(fmt, va);
+        if (!gTestRunnerState.test->runner->handleExitWithResult
+         || !gTestRunnerState.test->runner->handleExitWithResult(gTestRunnerState.test->data, result))
+        {
+            va_list va;
+            va_start(va, fmt);
+            MgbaVPrintf_(fmt, va);
+            va_end(va);
+        }
     }
     JumpToAgbMainLoop();
 }
@@ -389,6 +529,7 @@ static s32 MgbaVPrintf_(const char *fmt, va_list va)
 {
     s32 i = 0;
     s32 c, d;
+    u32 p;
     const char *s;
     while (*fmt)
     {
@@ -420,6 +561,20 @@ static s32 MgbaVPrintf_(const char *fmt, va_list va)
                     }
                     while (n > 0)
                         i = MgbaPutchar_(i, buffer[--n]);
+                }
+                break;
+            case 'p':
+                p = va_arg(va, unsigned);
+                {
+                    s32 n;
+                    for (n = 0; n < 7; n++)
+                    {
+                        unsigned nybble = (p >> (24 - (4*n))) & 0xF;
+                        if (nybble <= 9)
+                            i = MgbaPutchar_(i, '0' + nybble);
+                        else
+                            i = MgbaPutchar_(i, 'a' + nybble - 10);
+                    }
                 }
                 break;
             case 'q':

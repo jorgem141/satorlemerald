@@ -92,6 +92,8 @@ const struct FormChange *const gFormChangeTablePointers[NUM_SPECIES] =
     [SPECIES_BURMY] = sBurmyFormChangeTable,
     [SPECIES_BURMY_SANDY_CLOAK] = sBurmyFormChangeTable,
     [SPECIES_BURMY_TRASH_CLOAK] = sBurmyFormChangeTable,
+    [SPECIES_CHERRIM] = sCherrimFormChangeTable,
+    [SPECIES_CHERRIM_SUNSHINE] = sCherrimFormChangeTable,
     [SPECIES_LOPUNNY] = sLopunnyFormChangeTable,
     [SPECIES_LOPUNNY_MEGA] = sLopunnyFormChangeTable,
     [SPECIES_GARCHOMP] = sGarchompFormChangeTable,
@@ -208,6 +210,8 @@ const struct FormChange *const gFormChangeTablePointers[NUM_SPECIES] =
     [SPECIES_MINIOR_CORE_VIOLET] = sMiniorVioletFormChangeTable,
     [SPECIES_MINIOR_METEOR_YELLOW] = sMiniorYellowFormChangeTable,
     [SPECIES_MINIOR_CORE_YELLOW] = sMiniorYellowFormChangeTable,
+    [SPECIES_NECROZMA_DUSK_MANE] = sNecrozmaDuskManeFormChangeTable,
+    [SPECIES_NECROZMA_DAWN_WINGS] = sNecrozmaDawnWingsFormChangeTable,
 #endif
 #if P_GEN_8_POKEMON == TRUE
     [SPECIES_CRAMORANT] = sCramorantFormChangeTable,

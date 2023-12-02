@@ -1053,8 +1053,9 @@
 	.byte 0xca
 	.endm
 
-	.macro setcharge
+	.macro setcharge battler:req
 	.byte 0xcb
+	.byte \battler
 	.endm
 
 	.macro callterrainattack
@@ -1186,11 +1187,11 @@
 	.byte 0xe5
 	.endm
 
-	.macro doweatherformchangeanimation
+	.macro unused3
 	.byte 0xe6
 	.endm
 
-	.macro tryweatherformdatachange
+	.macro unused4
 	.byte 0xe7
 	.endm
 
@@ -1311,13 +1312,19 @@
 	.4byte \failInstr
 	.endm
 
+	.macro jumpifcantfling battler:req, jumpInstr:req
+	callnative BS_JumpIfCantFling
+	.byte \battler
+	.4byte \jumpInstr
+	.endm
+
 	.macro jumpifholdeffect battler:req, holdEffect:req, jumpInstr:req
 	callnative BS_JumpIfHoldEffect
 	.byte \battler
 	.2byte \holdEffect
 	.4byte \jumpInstr
 	.endm
-	
+
 	.macro dostockpilestatchangeswearoff, battler:req, statChangeInstr:req
 	callnative BS_DoStockpileStatChangesWearOff
 	.byte \battler
@@ -1344,6 +1351,119 @@
 
 	.macro itemrestorepp
 	callnative BS_ItemRestorePP
+	.endm
+
+	.macro tryrevertweatherform
+	callnative BS_TryRevertWeatherForm
+	.endm
+
+	.macro setsnow
+	callnative BS_SetSnow
+	.endm
+
+	.macro applysaltcure battler:req
+	callnative BS_ApplySaltCure
+	.byte \battler
+	.endm
+
+	.macro setzeffect
+	callnative BS_SetZEffect
+	.endm
+
+	@ Used by effects that may proc Symbiosis but do not call removeitem.
+	.macro trysymbiosis
+	callnative BS_TrySymbiosis
+	.endm
+
+	@ returns B_SIDE_x to gBattleCommunication[0]
+	.macro getbattlerside battler:req
+	callnative BS_GetBattlerSide
+	.byte \battler
+	.endm
+
+	.macro checkparentalbondcounter counter:req, ptr:req
+	callnative BS_CheckParentalBondCounter
+	.byte \counter
+	.4byte \ptr
+	.endm
+
+	.macro jumpifcantloseitem battler:req, ptr:req
+	callnative BS_JumpIfCantLoseItem
+	.byte \battler
+	.4byte \ptr
+	.endm
+
+	.macro handlemegaevo battler:req, case:req
+	callnative BS_HandleMegaEvolution
+	.byte \battler
+	.byte \case
+	.endm
+
+	.macro handleprimalreversion battler:req, case:req
+	callnative BS_HandlePrimalReversion
+	.byte \battler
+	.byte \case
+	.endm
+
+	.macro handleultraburst battler:req, case:req
+	callnative BS_HandleUltraBurst
+	.byte \battler
+	.byte \case
+	.endm
+
+	.macro jumpifshelltrap battler:req, jumpInstr:req
+	callnative BS_JumpIfShellTrap
+	.byte \battler
+	.4byte \jumpInstr
+	.endm
+
+	.macro jumpifemergencyexited battler:req, jumpInstr:req
+	callnative BS_JumpIfEmergencyExited
+	.byte \battler
+	.4byte \jumpInstr
+	.endm
+
+	.macro jumpifrodaffected battler:req, jumpInstr:req
+	callnative BS_JumpIfRod
+	.4byte \jumpInstr
+	.endm
+
+	.macro jumpifabsorbaffected battler:req, jumpInstr:req
+	callnative BS_JumpIfAbsorb
+	.4byte \jumpInstr
+	.endm
+
+	.macro jumpifmotoraffected battler:req, jumpInstr:req
+	callnative BS_JumpIfMotor
+	.4byte \jumpInstr
+	.endm
+
+	.macro jumpifargument argument:req, jumpInstr:req
+	callnative BS_JumpIfArgument
+	.byte \argument
+	.4byte \jumpInstr
+	.endm
+
+	.macro setremoveterrain failInstr:req
+	callnative BS_SetRemoveTerrain
+	.4byte \failInstr
+	.endm
+
+	.macro jumpifterrainaffected battler:req, terrainFlags:req, jumpInstr:req
+	callnative BS_JumpIfTerrainAffected
+	.byte \battler
+	.4byte \terrainFlags
+	.4byte \jumpInstr
+	.endm
+
+	.macro tryreflecttype failInstr:req
+	callnative BS_TryReflectType
+	.4byte \failInstr
+	.endm
+
+	.macro tryhealpulse failInstr:req
+	callnative BS_TryHealPulse
+	.4byte \failInstr
 	.endm
 
 @ various command changed to more readable macros
@@ -1537,11 +1657,6 @@
 	various \battler, VARIOUS_SET_LAST_USED_ABILITY
 	.endm
 
-	.macro tryhealpulse battler:req, failInstr:req
-	various \battler, VARIOUS_TRY_HEAL_PULSE
-	.4byte \failInstr
-	.endm
-
 	.macro tryquash failInstr:req
 	various BS_ATTACKER, VARIOUS_TRY_QUASH
 	.4byte \failInstr
@@ -1561,11 +1676,6 @@
 	various \battler, VARIOUS_INVERT_STAT_STAGES
 	.endm
 
-	.macro setterrain failInstr:req
-	various BS_ATTACKER, VARIOUS_SET_TERRAIN
-	.4byte \failInstr
-	.endm
-
 	.macro trymefirst failInstr:req
 	various BS_ATTACKER, VARIOUS_TRY_ME_FIRST
 	.4byte \failInstr
@@ -1581,24 +1691,9 @@
 	.4byte \failInstr
 	.endm
 
-	.macro tryreflecttype failInstr:req
-	various BS_ATTACKER, VARIOUS_TRY_REFLECT_TYPE
-	.4byte \failInstr
-	.endm
-
 	.macro trysoak failInstr:req
 	various BS_ATTACKER, VARIOUS_TRY_SOAK
 	.4byte \failInstr
-	.endm
-
-	.macro handlemegaevo battler:req, case:req
-	various \battler, VARIOUS_HANDLE_MEGA_EVO
-	.byte \case
-	.endm
-
-	.macro handleprimalreversion battler:req, case:req
-	various \battler, VARIOUS_HANDLE_PRIMAL_REVERSION
-	.byte \case
 	.endm
 
 	.macro handleformchange battler:req, case:req
@@ -1831,10 +1926,6 @@
 	various \battler, VARIOUS_TRY_ACTIVATE_GRIM_NEIGH
 	.endm
 
-	.macro setzeffect
-	various BS_ATTACKER, VARIOUS_SET_Z_EFFECT
-	.endm
-
 	.macro consumeberry battler:req, fromBattler:req
 	various \battler, VARIOUS_CONSUME_BERRY
 	.byte \fromBattler
@@ -1860,12 +1951,6 @@
 	.macro tryroomservice battler:req, failInstr:req
 	various \battler, VARIOUS_ROOM_SERVICE
 	.4byte \failInstr
-	.endm
-
-	.macro jumpifterrainaffected battler:req, terrainFlags:req, jumpInstr:req
-	various \battler, VARIOUS_JUMP_IF_TERRAIN_AFFECTED
-	.4byte \terrainFlags
-	.4byte \jumpInstr
 	.endm
 
 	.macro jumpifpranksterblocked battler:req, jumpInstr:req
@@ -1977,21 +2062,6 @@
 	various BS_ATTACKER, VARIOUS_SHELL_SIDE_ARM_CHECK
 	.endm
 
-	.macro jumpifrodaffected battler:req, jumpInstr:req
-	various \battler, VARIOUS_JUMP_IF_ROD
-	.4byte \jumpInstr
-	.endm
-
-	.macro jumpifabsorbaffected battler:req, jumpInstr:req
-	various \battler, VARIOUS_JUMP_IF_ABSORB
-	.4byte \jumpInstr
-	.endm
-
-	.macro jumpifmotoraffected battler:req, jumpInstr:req
-	various \battler, VARIOUS_JUMP_IF_MOTOR
-	.4byte \jumpInstr
-	.endm
-
 	.macro jumpifteanoberry jumpInstr:req
 	various BS_ATTACKER, VARIOUS_TEATIME_TARGETS
 	.4byte \jumpInstr
@@ -1999,11 +2069,6 @@
 
 	.macro jumpifteainvulnerable battler:req, jumpInstr:req
 	various \battler, VARIOUS_TEATIME_INVUL
-	.4byte \jumpInstr
-	.endm
-
-	.macro jumpifcantfling battler:req, jumpInstr:req
-	various \battler, VARIOUS_JUMP_IF_CANT_FLING
 	.4byte \jumpInstr
 	.endm
 
@@ -2046,19 +2111,6 @@
 	various BS_ATTACKER, VARIOUS_SWAP_SIDE_STATUSES
 	.endm
 
-	.macro canteleport battler:req
-	various \battler, VARIOUS_CAN_TELEPORT
-	.endm
-
-	.macro getbattlerside battler:req
-	various \battler, VARIOUS_GET_BATTLER_SIDE
-	.endm
-
-	.macro checkparentalbondcounter counter:req, jumpInstr:req
-	various BS_ATTACKER, VARIOUS_CHECK_PARENTAL_BOND_COUNTER
-	.byte \counter
-	.4byte \jumpInstr
-	.endm
 	.macro swapstats stat:req
 	various BS_ATTACKER, VARIOUS_SWAP_STATS
 	.byte \stat
@@ -2159,6 +2211,11 @@
 	jumpifbyte CMP_COMMON_BITS, gMoveResultFlags, MOVE_RESULT_NO_EFFECT, \jumpInstr
 	.endm
 
+	.macro jumpifside battler:req, side:req, equalJumpInstr:req
+	getbattlerside \battler
+	jumpifbyte CMP_EQUAL, gBattleCommunication, \side, \equalJumpInstr
+	.endm
+
 	.macro jumpifbattletype flags:req, jumpInstr:req
 	jumpifword CMP_COMMON_BITS, gBattleTypeFlags, \flags, \jumpInstr
 	.endm
@@ -2238,11 +2295,6 @@
 	various 0, VARIOUS_SKY_DROP_YAWN
 	.endm
 
-	@ Used by effects that may proc Symbiosis but do not call removeitem.
-	.macro trysymbiosis
-	various BS_ATTACKER, VARIOUS_TRY_SYMBIOSIS
-	.endm
-
 	@ Tries to increase or decrease a battler's stat's stat stage by a specified amount. If impossible, jumps to \script.
 	.macro modifybattlerstatstage battler:req, stat:req, mode:req, amount:req, script:req, animation:req, customString
 
@@ -2274,16 +2326,6 @@
 	waitmessage B_WAIT_TIME_LONG
 	.endm
 
-	.macro jumpifemergencyexited battler:req, jumpInstr:req
-	various \battler, VARIOUS_JUMP_IF_EMERGENCY_EXITED
-	.4byte \jumpInstr
-	.endm
-
-	.macro jumpifshelltrap battler:req, ptr:req
-	various \battler, VARIOUS_JUMP_IF_SHELL_TRAP
-	.4byte \ptr
-	.endm
-
 	.macro hitswitchtargetfailed
 	various 0, VARIOUS_HIT_SWITCH_TARGET_FAILED
 	.endm
@@ -2291,4 +2333,10 @@
 	.macro tryrevivalblessing, jumpInstr:req
 	various 0, VARIOUS_TRY_REVIVAL_BLESSING
 	.4byte \jumpInstr
+	.endm
+
+	@ Will jump to script pointer if the specified battler has or has not fainted.
+	.macro jumpiffainted battler:req, value:req, ptr:req
+	getbattlerfainted \battler
+	jumpifbyte CMP_EQUAL, gBattleCommunication, \value, \ptr
 	.endm
