@@ -7612,35 +7612,36 @@ u8 GetNumberOfRelearnableMoves(struct Pokemon *mon)
 	else
 	{
 		// for each entry in the mon's level up learnset:
-		for (i = 0; i < MAX_LEVEL_UP_MOVES; i++)
-		{
-			u16 moveLevel;
+    for (i = 0; i < MAX_MON_MOVES; i++)
+        learnedMoves[i] = GetMonData(mon, MON_DATA_MOVE1 + i, 0);
 
-			if (gLevelUpLearnsets[species][i].move == LEVEL_UP_END)
-				break;
+    for (i = 0; i < MAX_LEVEL_UP_MOVES; i++)
+    {
+        u16 moveLevel;
 
-			moveLevel = gLevelUpLearnsets[species][i].level;
+        if (gLevelUpLearnsets[species][i].move == LEVEL_UP_END)
+            break;
 
-			// if the move can be learned
-			if (moveLevel <= level)
-			{
-				// and the mon doesn't know the move already
-				for (j = 0; j < MAX_MON_MOVES && learnedMoves[j] != gLevelUpLearnsets[species][i].move; j++)
-					;
+        moveLevel = gLevelUpLearnsets[species][i].level;
 
-				if (j == MAX_MON_MOVES)
-				{
-					// and the move isn't already in the list of moves to learn
-					for (k = 0; k < numMoves && moves[k] != (gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID); k++)
-						;
+        if (moveLevel <= level)
+        {
+            for (j = 0; j < MAX_MON_MOVES && learnedMoves[j] != gLevelUpLearnsets[species][i].move; j++)
+                ;
 
-					// add the move to the array
-					if (k == numMoves)
-						moves[numMoves++] = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID;
-				}
-			}
-		}
-	}
+            if (j == MAX_MON_MOVES)
+            {
+                for (k = 0; k < numMoves && moves[k] != gLevelUpLearnsets[species][i].move; k++)
+                    ;
+
+                if (k == numMoves)
+                    moves[numMoves++] = gLevelUpLearnsets[species][i].move;
+            }
+        }
+    }
+
+    return numMoves;
+}
 	
 	// return the size of the array
     return numMoves;

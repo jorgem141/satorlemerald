@@ -484,9 +484,6 @@ u16 GetBaseForm(u16 species)
 		// UNLESS it's already been run <NUM SPECIES> times, AKA has already checked every single Pokemon
         if (j == NUM_SPECIES)
             break;
-		// since elempty's evolutions can evolve back into it, put the kibosh on the loop so it doesn't return the wrong one
-		if (species == SPECIES_ELEMPTY)
-			break;
     }
 
     return species;
