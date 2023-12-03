@@ -264,6 +264,101 @@ Route117_PokemonDayCare_EventScript_UnusedRetrieveMon::
 	release
 	end
 
+.set LOCALID_MOVE_RELEARNER, 1
+
+Route117_PokemonDayCare_EventScript_MoveRelearner::
+	lockall
+	faceplayer
+	waitmovement 0
+	goto_if_set FLAG_TEMP_1, Route117_PokemonDayCare_EventScript_AskTeachMove
+	msgbox Route117_PokemonDayCare_Text_ImTheMoveTutor, MSGBOX_DEFAULT
+	setflag FLAG_TEMP_1
+	goto Route117_PokemonDayCare_EventScript_AskTeachMove
+	end
+
+Route117_PokemonDayCare_EventScript_AskTeachMove::
+	setflag FLAG_EGG_MOVE_TUTOR
+	setflag FLAG_HELD_ITEMS_STORED
+	msgbox Route117_PokemonDayCare_Text_ThatsAHeartScaleWantMeToTeachMove, MSGBOX_YESNO
+	switch VAR_RESULT
+	case NO, Route117_PokemonDayCare_EventScript_ComeBackWithHeartScale
+	goto Route117_PokemonDayCare_EventScript_ChooseMon
+	end
+
+Route117_PokemonDayCare_EventScript_ChooseMon::
+	msgbox Route117_PokemonDayCare_Text_TutorWhichMon, MSGBOX_DEFAULT
+	special ChooseMonForMoveRelearner
+	waitstate
+	goto_if_eq VAR_0x8004, PARTY_NOTHING_CHOSEN, Route117_PokemonDayCare_EventScript_ComeBackWithHeartScale
+	special IsSelectedMonEgg
+	goto_if_eq VAR_RESULT, TRUE, Route117_PokemonDayCare_EventScript_CantTeachEgg
+	goto_if_eq VAR_0x8005, 0, Route117_PokemonDayCare_EventScript_NoMoveToTeachMon
+	goto Route117_PokemonDayCare_EventScript_ChooseMove
+	end
+
+Route117_PokemonDayCare_EventScript_ChooseMove::
+	msgbox Route117_PokemonDayCare_Text_TeachWhichMove, MSGBOX_DEFAULT
+	special TeachMoveRelearnerMove
+	waitstate
+	goto_if_eq VAR_0x8004, 0, Route117_PokemonDayCare_EventScript_ChooseMon
+	msgbox Route117_PokemonDayCare_Text_HandedOverHeartScale, MSGBOX_DEFAULT
+	goto Route117_PokemonDayCare_EventScript_ComeBackWithHeartScale
+	end
+
+Route117_PokemonDayCare_EventScript_NoMoveToTeachMon::
+	msgbox Route117_PokemonDayCare_Text_DontHaveMoveToTeachPokemon, MSGBOX_DEFAULT
+	goto Route117_PokemonDayCare_EventScript_ChooseMon
+	end
+
+Route117_PokemonDayCare_EventScript_CantTeachEgg::
+	msgbox Route117_PokemonDayCare_Text_CantTeachEgg, MSGBOX_DEFAULT
+	goto Route117_PokemonDayCare_EventScript_ChooseMon
+	end
+
+Route117_PokemonDayCare_EventScript_ComeBackWithHeartScale::
+	clearflag FLAG_EGG_MOVE_TUTOR
+	clearflag FLAG_HELD_ITEMS_STORED
+	msgbox Route117_PokemonDayCare_Text_ComeBackWithHeartScale, MSGBOX_DEFAULT
+	releaseall
+	end
+
+Route117_PokemonDayCare_Text_ImTheMoveTutor:
+	.string "I'm the EGG MOVE TUTOR.\p"
+	.string "I know all the moves that POKéMON\n"
+	.string "learn by breeding and I can\l"
+	.string "teach POKéMON those moves.\p"
+	.string "I can teach a move to a POKéMON\n"
+	.string "of yours if you'd like.$"
+
+Route117_PokemonDayCare_Text_ThatsAHeartScaleWantMeToTeachMove:
+	.string "Let me guess, you want me to teach\n"
+	.string "a move?$"
+
+Route117_PokemonDayCare_Text_TutorWhichMon:
+	.string "Which POKéMON needs tutoring?$"
+
+Route117_PokemonDayCare_Text_TeachWhichMove:
+	.string "Which move should I teach?$"
+
+Route117_PokemonDayCare_Text_DontHaveMoveToTeachPokemon:
+	.string "Sorry…\p"
+	.string "It doesn't appear as if I have any move\n"
+	.string "I can teach that POKéMON.$"
+
+Route117_PokemonDayCare_Text_HandedOverHeartScale:
+	.string "{PLAYER}'s POKéMON\n"
+	.string "learned an egg move!$"
+
+Route117_PokemonDayCare_Text_ComeBackWithHeartScale:
+	.string "If your POKéMON need to learn a move,\n"
+	.string "come back whenever.$"
+
+Route117_PokemonDayCare_Text_CantTeachEgg:
+	.string "Hunh? There isn't a single move that\n"
+	.string "I can teach an EGG.$"
+
+
+
 EventScript_EggHatch::
 	lockall
 	msgbox Text_EggHatchHuh, MSGBOX_DEFAULT
