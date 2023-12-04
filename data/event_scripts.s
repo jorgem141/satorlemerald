@@ -1005,6 +1005,13 @@ Common_EventScript_LegendaryFlewAway::
 	end
 
 EventScript_DoWonderTrade::
+	lockall
+	faceplayer
+	msgbox DoWonderTrade_Text_DoWonderTrade_Start, MSGBOX_YESNO
+	compare VAR_RESULT, NO
+	goto_if_eq EventScript_DoWonderTrade_VisitAgain
+	msgbox DoWonderTrade_Text_SelectMon, MSGBOX_DEFAULT
+
 	special ChoosePartyMon
 	waitstate
 	compare VAR_0x8004, PARTY_SIZE
@@ -1013,7 +1020,7 @@ EventScript_DoWonderTrade::
 	special CreateWonderTradePokemon
 	special DoInGameTradeScene
 	waitstate
-	msgbox EventScript_DoWonderTrade_Text_WannaDoAnotherWonderTrade, MSGBOX_YESNO
+	msgbox DoWonderTrade_Text_WannaDoAnotherWonderTrade, MSGBOX_YESNO
 	compare VAR_RESULT, YES
 	goto_if_eq EventScript_DoWonderTrade
 	msgbox EventScript_DoWonderTrade_Text_Done, MSGBOX_DEFAULT
@@ -1021,7 +1028,21 @@ EventScript_DoWonderTrade::
 EventScript_End:
 	end
 
-EventScript_DoWonderTrade_Text_WannaDoAnotherWonderTrade:
+EventScript_DoWonderTrade_VisitAgain::
+    msgbox WonderTrade_Text_DoWonderTrade_VistAgain, MSGBOX_DEFAULT
+    releaseall
+    end
+
+DoWonderTrade_Text_DoWonderTrade_Start:
+    .string "Would you like to start a Wonder Trade?$"
+
+WonderTrade_Text_DoWonderTrade_VistAgain:
+    .string "Please visit again!$"
+
+DoWonderTrade_Text_SelectMon:
+    .string "Please select a Pokemon.$"
+
+DoWonderTrade_Text_WannaDoAnotherWonderTrade:
 	.string "Do you want to do\nanother Wonder Trade?$"
 
 EventScript_DoWonderTrade_Text_Done:
