@@ -648,7 +648,7 @@ void CreateWonderTradePokemon(u8 whichPlayerMon)
         CreateMon(pokemon, species, level, 0, FALSE, 0, TRUE, (Random() << 16) | Random());
     }
 
-    GetSpeciesName(name, species);
+    GetSpeciesName(species);
 
     // 10% chance of having the generated Wonder Traded 'mon carry an item.
     if ((Random() % 99) < 10)
@@ -952,7 +952,7 @@ u16 determineEvolution(struct Pokemon *mon)
             if (MonKnowsMove(mon, gEvolutionTable[species][i].param))
                 targetSpecies = gEvolutionTable[species][i].targetSpecies;
             break;
-        case EVO_MOVE_TYPE:
+        case EVO_FRIENDSHIP_MOVE_TYPE:
             for (j = 0; j < 4; j++)
             {
                 if (gBattleMoves[GetMonData(mon, MON_DATA_MOVE1 + j, NULL)].type == gEvolutionTable[species][i].param)
@@ -968,8 +968,8 @@ u16 determineEvolution(struct Pokemon *mon)
                 for (j = 0; j < PARTY_SIZE; j++)
                 {
                     u16 currSpecies = GetMonData(&gPlayerParty[j], MON_DATA_SPECIES, NULL);
-                    if (gSpeciesInfo[currSpecies].type1 == TYPE_DARK
-                     || gSpeciesInfo[currSpecies].type2 == TYPE_DARK)
+                    if (gSpeciesInfo[currSpecies].types[0] == TYPE_DARK
+                     || gSpeciesInfo[currSpecies].types[1] == TYPE_DARK)
                     {
                         targetSpecies = gEvolutionTable[species][i].targetSpecies;
                         break;
@@ -1189,23 +1189,23 @@ u16 determineEvolution(struct Pokemon *mon)
 }
 #endif
 
-#if defined ITEM_EXPANSION && defined POKEMON_EXPANSION
-bool32 IsMegaPreEvolution(u16 species, u16 heldStone, bool32 found)
-{
-    u8 i;
+//#if defined ITEM_EXPANSION && defined POKEMON_EXPANSION
+//bool32 IsMegaPreEvolution(u16 species, u16 heldStone, bool32 found)
+///{
+   // u8 i;
 
-    for (i = 0; i < EVOS_PER_MON; i++)
-    {
-        if (gEvolutionTable[species][i].targetSpecies != SPECIES_NONE)
-        {
-            if (gEvolutionTable[species][i].method == EVO_MEGA_EVOLUTION && gEvolutionTable[species][i].param == heldStone)
-                found = TRUE;
+    //for (i = 0; i < EVOS_PER_MON; i++)
+   // {
+       // if (gEvolutionTable[species][i].targetSpecies != SPECIES_NONE)
+//{
+         //   if (gEvolutionTable[species][i].method == EVO_MEGA_EVOLUTION && gEvolutionTable[species][i].param == heldStone)
+                //found = TRUE;
 
-            found = IsMegaPreEvolution(gEvolutionTable[species][i].targetSpecies, heldStone, found);
-        }
-    }
-    return found;
-}
+      //      found = IsMegaPreEvolution(gEvolutionTable[species][i].targetSpecies, heldStone, found);
+      //  }
+  //  }
+   // return found;
+//}
 
 // Generate an item randomly for a Wonder Trade in coming Pokémon to hold, with a few exceptions
 u16 GetValidWonderTradeItem(u16 item)
@@ -1235,8 +1235,8 @@ u16 GetValidWonderTradeItem(u16 item)
            || ItemId_GetHoldEffect(item) == HOLD_EFFECT_DRIVE
            || ItemId_GetHoldEffect(item) == HOLD_EFFECT_PLATE
            || ItemId_GetHoldEffect(item) == HOLD_EFFECT_GEMS)
-           && (gSpeciesInfo[species].type1 != ItemId_GetHoldEffectParam(item)
-            || gSpeciesInfo[species].type2 != ItemId_GetHoldEffectParam(item)))
+           && (gSpeciesInfo[species].types[0] != ItemId_GetHoldEffectParam(item)
+            || gSpeciesInfo[species].types[1] != ItemId_GetHoldEffectParam(item)))
         goto ROLL;
     else if (item >= ITEM_NORMALIUM_Z && item <= ITEM_ULTRANECROZIUM_Z)
         goto ROLL;
@@ -1259,44 +1259,44 @@ u16 GetValidWonderTradeItem(u16 item)
            || item == ITEM_PINK_NECTAR || item == ITEM_PURPLE_NECTAR)
            && (GET_BASE_SPECIES_ID(species) != SPECIES_ORICORIO))
         goto ROLL;
-
+}
     // Make sure that if the Pokémon can Mega Evolve, or it evolves into a species who can, it can get the relevant Mega Stone
-    if (ItemId_GetHoldEffect(item) == HOLD_EFFECT_MEGA_STONE)
-    {
-        if (!IsMegaPreEvolution(species, item, FALSE))
-            goto ROLL;
-    }
+    //if (ItemId_GetHoldEffect(item) == HOLD_EFFECT_MEGA_STONE)
+   // {
+      //  if (!IsMegaPreEvolution(species, item, FALSE))
+         //   goto ROLL;
+   // }
 
-    return item;
-}
-#else
-u16 GetValidWonderTradeItem(u16 item)
-{
-    int i;
-    u16 species = GetMonData(&gEnemyParty[0], MON_DATA_SPECIES);
+    //return item;
+//}
+//#else
+//u16 GetValidWonderTradeItem(u16 item)
+//{
+   // int i;
+    //u16 species = GetMonData(&gEnemyParty[0], MON_DATA_SPECIES);
 
-    ROLL:
-        item = Random() % ITEMS_COUNT;
+    //ROLL:
+      //  item = Random() % ITEMS_COUNT;
 
-    if (item == ITEM_NONE || item == ITEM_ENIGMA_BERRY)
-        goto ROLL;
-    else if (IS_ITEM_MAIL(item))
-        goto ROLL;
-    else if (ItemId_GetPocket(item) == POCKET_KEY_ITEMS)
-        goto ROLL;
-    else if (item >= ITEM_HM01 && item <= ITEM_HM08)
-        goto ROLL;
-    else if (item == ITEM_THICK_CLUB && (species != SPECIES_CUBONE || species != SPECIES_MAROWAK))
-        goto ROLL;
-    else if (item == ITEM_LIGHT_BALL && species != SPECIES_PIKACHU)
-        goto ROLL;
-    else if ((item == ITEM_DEEP_SEA_SCALE || item == ITEM_DEEP_SEA_TOOTH) && species != SPECIES_CLAMPERL)
-        goto ROLL;
-    else if (item == ITEM_METAL_POWDER && species != SPECIES_DITTO)
-        goto ROLL;
-    else if (sIsInvalidItem[item])
-        goto ROLL;
+   //if (item == ITEM_NONE || item == ITEM_ENIGMA_BERRY)
+  //      goto ROLL;
+   // else if (IS_ITEM_MAIL(item))
+    //    goto ROLL;
+  //  else if (ItemId_GetPocket(item) == POCKET_KEY_ITEMS)
+   //     goto ROLL;
+    //else if (item >= ITEM_HM01 && item <= ITEM_HM08)
+     //   goto ROLL;
+   // else if (item == ITEM_THICK_CLUB && (species != SPECIES_CUBONE || species != SPECIES_MAROWAK))
+      //  goto ROLL;
+  //  else if (item == ITEM_LIGHT_BALL && species != SPECIES_PIKACHU)
+    //    goto ROLL;
+   // else if ((item == ITEM_DEEP_SEA_SCALE || item == ITEM_DEEP_SEA_TOOTH) && species != SPECIES_CLAMPERL)
+     //   goto ROLL;
+  // else if (item == ITEM_METAL_POWDER && species != SPECIES_DITTO)
+     //   goto ROLL;
+   // else if (sIsInvalidItem[item])
+      //  goto ROLL;
 
-    return item;
-}
-#endif
+   //// return item;
+//}
+//#endif
