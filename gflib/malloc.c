@@ -1,11 +1,32 @@
 #include "global.h"
 #include "malloc.h"
-#if TESTING
-#include "test/test.h"
-#endif
 
 static void *sHeapStart;
 static u32 sHeapSize;
+
+EWRAM_DATA u8 gHeap[HEAP_SIZE] = {0};
+
+#define MALLOC_SYSTEM_ID 0xA3A3
+
+struct MemBlock {
+    // Whether this block is currently allocated.
+    bool16 flag;
+
+    // Magic number used for error checking. Should equal MALLOC_SYSTEM_ID.
+    u16 magic;
+
+    // Size of the block (not including this header struct).
+    u32 size;
+
+    // Previous block pointer. Equals sHeapStart if this is the first block.
+    struct MemBlock *prev;
+
+    // Next block pointer. Equals sHeapStart if this is the last block.
+    struct MemBlock *next;
+
+    // Data in the memory block. (Arrays of length 0 are a GNU extension.)
+    u8 data[0];
+};
 
 void PutMemBlockHeader(void *block, struct MemBlock *prev, struct MemBlock *next, u32 size)
 {

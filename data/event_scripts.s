@@ -1,3 +1,4 @@
+#include "config.h"
 #include "config/battle.h"
 #include "config/item.h"
 #include "constants/global.h"
@@ -1004,49 +1005,12 @@ Common_EventScript_LegendaryFlewAway::
 	release
 	end
 
-EventScript_DoWonderTrade::
-	lockall
-	faceplayer
-	msgbox DoWonderTrade_Text_DoWonderTrade_Start, MSGBOX_YESNO
-	compare VAR_RESULT, NO
-	goto_if_eq EventScript_DoWonderTrade_VisitAgain
-	msgbox DoWonderTrade_Text_SelectMon, MSGBOX_DEFAULT
-
-	special ChoosePartyMon
+EventScript_VsSeekerChargingDone::
+	special VsSeekerFreezeObjectsAfterChargeComplete
 	waitstate
-	compare VAR_0x8004, PARTY_SIZE
-	goto_if_ge EventScript_End
-	copyvar VAR_0x8005, VAR_0x8004
-	special CreateWonderTradePokemon
-	special DoInGameTradeScene
-	waitstate
-	msgbox DoWonderTrade_Text_WannaDoAnotherWonderTrade, MSGBOX_YESNO
-	compare VAR_RESULT, YES
-	goto_if_eq EventScript_DoWonderTrade
-	msgbox EventScript_DoWonderTrade_Text_Done, MSGBOX_DEFAULT
-	closemessage
-EventScript_End:
+	special VsSeekerResetObjectMovementAfterChargeComplete
+	releaseall
 	end
-
-EventScript_DoWonderTrade_VisitAgain::
-    msgbox WonderTrade_Text_DoWonderTrade_VistAgain, MSGBOX_DEFAULT
-    releaseall
-    end
-
-DoWonderTrade_Text_DoWonderTrade_Start:
-    .string "Would you like to start a Wonder Trade?$"
-
-WonderTrade_Text_DoWonderTrade_VistAgain:
-    .string "Please visit again!$"
-
-DoWonderTrade_Text_SelectMon:
-    .string "Please select a Pokemon.$"
-
-DoWonderTrade_Text_WannaDoAnotherWonderTrade:
-	.string "Do you want to do\nanother Wonder Trade?$"
-
-EventScript_DoWonderTrade_Text_Done:
-	.string "Enjoy your new Pokémon.$"
 
 	.include "data/scripts/pc_transfer.inc"
 	.include "data/scripts/questionnaire.inc"
