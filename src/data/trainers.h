@@ -3188,7 +3188,7 @@ const struct Trainer gTrainers[] = {
         .trainerName = _("KIPP"),
         .items = {ITEM_POTION, ITEM_POTION, ITEM_NONE, ITEM_NONE},
         .doubleBattle = TRUE,
-        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_VIABILITY | AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_HELP_PARTNER | AI_FLAG_ACE_POKEMON | AI_FLAG_SETUP_FIRST_TURN,
+        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_VIABILITY | AI_FLAG_HELP_PARTNER | AI_FLAG_ACE_POKEMON | AI_FLAG_SETUP_FIRST_TURN,
         .party = TRAINER_PARTY(sParty_Roxanne1),
     },
 
@@ -3284,7 +3284,7 @@ const struct Trainer gTrainers[] = {
         .trainerName = _("JERRY"),
         .items = {},
         .doubleBattle = FALSE,
-        .aiFlags = AI_FLAG_CHECK_BAD_MOVE,
+        .aiFlags = AI_FLAG_SETUP_FIRST_TURN | AI_FLAG_CHECK_VIABILITY,
         .party = TRAINER_PARTY(sParty_Jerry1),
     },
 

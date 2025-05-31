@@ -3574,7 +3574,18 @@ static const struct TrainerMon sParty_Jerry1[] = {
     {
     .iv = TRAINER_PARTY_IVS(1, 1, 1, 1, 1, 1),
     .lvl = 9,
-    .species = SPECIES_RALTS,
+    .species = SPECIES_SMEARGLE,
+    .heldItem = ITEM_POWER_HERB,
+    .moves = {MOVE_GEOMANCY, MOVE_BATON_PASS, MOVE_SPORE}
+    },
+    {
+    .ev = TRAINER_PARTY_EVS(0, 0, 0, 252, 4, 252),    
+    .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+    .lvl = 10,
+    .species = SPECIES_SMEARGLE,
+    .heldItem = ITEM_CHOICE_SPECS,
+    .moves = {MOVE_STORED_POWER},
+    .nature = TRAINER_PARTY_NATURE(NATURE_MODEST),
     }
 };
 
