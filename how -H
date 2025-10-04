@@ -1,0 +1,1650 @@
+[33mcommit a8b6a8a96398a24284ee555b135b80ad7425dc1a[m[33m ([m[1;36mHEAD -> [m[1;32mNon-broken[m[33m)[m
+Merge: 4ca2178441 2e65627406
+Author: jorgem141 <jorgem141@outlook.com>
+Date:   Fri Oct 3 22:53:27 2025 -0400
+
+    Merge tag 'expansion/1.9.4' of https://github.com/rh-hideout/pokeemerald-expansion into Non-broken
+
+[1mdiff --cc asm/macros/map.inc[m
+[1mindex a50ce65821,74d2b5ff42..3940272435[m
+[1m--- a/asm/macros/map.inc[m
+[1m+++ b/asm/macros/map.inc[m
+[36m@@@ -19,12 -19,22 +19,25 @@@[m
+  	.4byte \script[m
+  	.endm[m
+  [m
+[31m -	@ Defines an object event template for map data, to be used by a normal object. Mirrors the struct layout of ObjectEventTemplate in include/global.fieldmap.h[m
+  	.macro object_event index:req, gfx:req, x:req, y:req, elevation:req, movement_type:req, x_radius:req, y_radius:req, trainer_type:req, sight_radius_tree_etc:req, script:req, event_flag:req[m
+[32m +	.byte \index,[m
+[32m +	.2byte \gfx[m
+[32m+ 	.byte \index[m
+[32m+ 	.2byte \gfx[m
+[32m+ 	.byte OBJ_KIND_NORMAL[m
+  	.2byte \x, \y[m
+[32m +	.byte \elevation, \movement_type, ((\y_radius << 4) | \x_radius), 0[m
+[32m +    .2byte \trainer_type, \sight_radius_tree_etc[m
+[32m+ 	.byte \elevation[m
+[32m+ 	.byte \movement_type[m
+[32m+ 	.if \x_radius > 15[m
+[32m+ 		@ This warning is relevant for GetItemBallIdAndAmountFromTemplate[m
+[32m+ 		.error "movementRangeX has a bitfield of 4 bytes, so values over 15 will overflow. Use a custom script for item balls that should give the player more than 15 items."[m
+[32m+ 	.endif[m
+[32m+ 	.byte ((\y_radius << 4) | \x_radius)[m
+[32m+ 	.space 1  @ Padding[m
+[32m+ 	.2byte \trainer_type[m
+[32m+ 	.2byte \sight_radius_tree_etc[m
+  	.4byte \script[m
+  	.2byte \event_flag[m
+  	.space 2  @ Padding[m
+[1mdiff --cc data/event_scripts.s[m
+[1mindex 123db7bb75,4307da3395..43bbb741e9[m
+[1m--- a/data/event_scripts.s[m
+[1m+++ b/data/event_scripts.s[m
+[36m@@@ -1004,50 -1011,13 +1011,57 @@@[m [mCommon_EventScript_LegendaryFlewAway:[m
+  	release[m
+  	end[m
+  [m
+[32m+ EventScript_VsSeekerChargingDone::[m
+[32m+ 	special VsSeekerFreezeObjectsAfterChargeComplete[m
+[32m+ 	waitstate[m
+[32m+ 	special VsSeekerResetObjectMovementAfterChargeComplete[m
+[32m+ 	releaseall[m
+[32m+ 	end[m
+[32m+ [m
+[32m +EventScript_DoWonderTrade::[m
+[32m +	lockall[m
+[32m +	faceplayer[m
+[32m +	msgbox DoWonderTrade_Text_DoWonderTrade_Start, MSGBOX_YESNO[m
+[32m +	compare VAR_RESULT, NO[m
+[32m +	goto_if_eq EventScript_DoWonderTrade_VisitAgain[m
+[32m +	msgbox DoWonderTrade_Text_SelectMon, MSGBOX_DEFAULT[m
+[32m +[m
+[32m +	special ChoosePartyMon[m
+[32m +	waitstate[m
+[32m +	compare VAR_0x8004, PARTY_SIZE[m
+[32m +	goto_if_ge EventScript_End[m
+[32m +	copyvar VAR_0x8005, VAR_0x8004[m
+[32m +	special CreateWonderTradePokemon[m
+[32m +	special DoInGameTradeScene[m
+[32m +	waitstate[m
+[32m +	msgbox DoWonderTrade_Text_WannaDoAnotherWonderTrade, MSGBOX_YESNO[m
+[32m +	compare VAR_RESULT, YES[m
+[32m +	goto_if_eq EventScript_DoWonderTrade[m
+[32m +	msgbox EventScript_DoWonderTrade_Text_Done, MSGBOX_DEFAULT[m
+[32m +	closemessage[m
+[32m +EventScript_End:[m
+[32m +	end[m
+[32m +[m
+[32m +EventScript_DoWonderTrade_VisitAgain::[m
+[32m +    msgbox WonderTrade_Text_DoWonderTrade_VistAgain, MSGBOX_DEFAULT[m
+[32m +    releaseall[m
+[32m +    end[m
+[32m +[m
+[32m +DoWonderTrade_Text_DoWonderTrade_Start:[m
+[32m +    .string "Would you like to start a Wonder Trade?$"[m
+[32m +[m
+[32m +WonderTrade_Text_DoWonderTrade_VistAgain:[m
+[32m +    .string "Please visit again!$"[m
+[32m +[m
+[32m +DoWonderTrade_Text_SelectMon:[m
+[32m +    .string "Please select a Pokemon.$"[m
+[32m +[m
+[32m +DoWonderTrade_Text_WannaDoAnotherWonderTrade:[m
+[32m +	.string "Do you want to do\nanother Wonder Trade?$"[m
+[32m +[m
+[32m +EventScript_DoWonderTrade_Text_Done:[m
+[32m +	.string "Enjoy your new Pokémon.$"[m
+[32m +[m
+  	.include "data/scripts/pc_transfer.inc"[m
+  	.include "data/scripts/questionnaire.inc"[m
+  	.include "data/scripts/abnormal_weather.inc"[m
+[1mdiff --cc data/specials.inc[m
+[1mindex fc13307913,5ebb3d0ee1..52c1c2ff0b[m
+[1m--- a/data/specials.inc[m
+[1m+++ b/data/specials.inc[m
+[36m@@@ -534,6 -534,22 +534,24 @@@[m [mgSpecials:[m
+  	def_special RemoveRecordsWindow[m
+  	def_special CloseDeptStoreElevatorWindow[m
+  	def_special TrySetBattleTowerLinkType[m
+[32m +	def_special CreateWonderTradePokemon[m
+[32m +	def_special SetTotemBoost[m
+  	def_special TrySpecialOverworldEvo[m
+[32m+ 	def_special GetNumberSprayStrength[m
+[32m+ 	def_special GetSprayId[m
+[32m+ 	def_special GetLastUsedSprayType[m
+[32m+ 	def_special TrySkyBattle[m
+[32m+ 	def_special VsSeekerResetObjectMovementAfterChargeComplete[m
+[32m+ 	def_special VsSeekerFreezeObjectsAfterChargeComplete[m
+[32m+ 	def_special PlayerHasMulch[m
+[32m+ 	def_special Bag_ChooseMulch[m
+[32m+ 	def_special ObjectEventInteractionApplyMulch[m
+[32m+ 	def_special ObjectEventInteractionPullBerryWeed[m
+[32m+ 	def_special ObjectEventInteractionClearBerryPests[m
+[32m+ 	def_special ObjectEventInteractionBerryHasWeed[m
+[32m+ 	def_special ObjectEventInteractionBerryHasPests[m
+[32m+ 	def_special CanWaterBerryPlot[m
+[32m+ 	def_special Script_GetChosenMonOffensiveEVs[m
+[32m+ 	def_special Script_GetChosenMonDefensiveEVs[m
+[32m+ 	def_special Script_GetChosenMonOffensiveIVs[m
+[32m+ 	def_special Script_GetChosenMonDefensiveIVs[m
+[1mdiff --cc include/constants/event_objects.h[m
+[1mindex bbaa98beef,176c6d4a88..92bd09c766[m
+[1m--- a/include/constants/event_objects.h[m
+[1m+++ b/include/constants/event_objects.h[m
+[36m@@@ -240,21 -240,13 +240,19 @@@[m
+  #define OBJ_EVENT_GFX_LINK_RS_MAY                236[m
+  #define OBJ_EVENT_GFX_LUGIA                      237[m
+  #define OBJ_EVENT_GFX_HOOH                       238[m
+[31m- #define OBJ_EVENT_GFX_KIPP                       239[m
+[31m- #define OBJ_EVENT_GFX_XIN                        241[m
+[31m- #define OBJ_EVENT_GFX_JUJU                       242[m
+[31m- #define OBJ_EVENT_GFX_RALI                       243[m
+[32m+ #define OBJ_EVENT_GFX_POKE_BALL                  239[m
+[32m+ #define OBJ_EVENT_GFX_OW_MON                     240[m
+  [m
+[31m- // NOTE: By default, the max value for NUM_OBJ_EVENT_GFX is 239.[m
+[31m- //[m
+[31m- // Object event graphics ids are 1 byte in size (max value of 255), and the dynamic[m
+[31m- // graphics ids that start after NUM_OBJ_EVENT_GFX reach this limit. No graphics id[m
+[31m- // uses the value 239 itself, so removing the "+ 1" in OBJ_EVENT_GFX_VARS would[m
+[31m- // allow increasing NUM_OBJ_EVENT_GFX to 240. There are also a handful of unused[m
+[31m- // object graphics that can be removed. If more graphics are needed, anything that[m
+[31m- // stores graphics ids will need to be increased in size. See wiki entry below:[m
+[31m- // https://github.com/pret/pokeemerald/wiki/Feature-Branches#overworld-expansion[m
+[31m- #define NUM_OBJ_EVENT_GFX                        244[m
+[32m+ // NOTE: The maximum amount of object events has been expanded from 255 to 65535.[m
+[32m+ // Since dynamic graphics ids still require at least 16 free values, the actual limit[m
+[32m+ // is 65519, but even considering follower Pokémon, this should be more than enough :)[m
+[31m -#define NUM_OBJ_EVENT_GFX                        241[m
+[32m++#define OBJ_EVENT_GFX_KIPP                       241[m
+[32m++#define OBJ_EVENT_GFX_XIN                        242[m
+[32m++#define OBJ_EVENT_GFX_JUJU                       243[m
+[32m++#define OBJ_EVENT_GFX_RALI                       244[m
+[32m++[m
+[32m++[m
+[32m++#define NUM_OBJ_EVENT_GFX                        245[m
+  [m
+  [m
+  // These are dynamic object gfx ids.[m
+[1mdiff --cc include/daycare.h[m
+[1mindex d990568ee6,4d5b470f8b..7a50d56225[m
+[1m--- a/include/daycare.h[m
+[1m+++ b/include/daycare.h[m
+[36m@@@ -32,9 -32,7 +32,11 @@@[m [mvoid SetDaycareCompatibilityString(void[m
+  bool8 NameHasGenderSymbol(const u8 *name, u8 genderRatio);[m
+  void ShowDaycareLevelMenu(void);[m
+  void ChooseSendDaycareMon(void);[m
+[32m+ u8 GetEggMovesBySpecies(u16 species, u16 *eggMoves);[m
+[32m+ bool8 SpeciesCanLearnEggMove(u16 species, u16 move);[m
+[32m +u16 GetBaseForm(u16 species);[m
+[32m +u16 GetEggMovesArraySize(void);[m
+[32m +// to support gEggMoves being referenced by pokemon.c[m
+[32m +extern const u16 gEggMoves[];[m
+  [m
+  #endif // GUARD_DAYCARE_H[m
+[1mdiff --cc include/event_object_movement.h[m
+[1mindex a5ef62fec7,ff132eb95d..f259965626[m
+[1m--- a/include/event_object_movement.h[m
+[1m+++ b/include/event_object_movement.h[m
+[36m@@@ -91,11 -109,16 +109,16 @@@[m [mstruct LockedAnimObjectEvent[m
+  [m
+  extern const struct OamData gObjectEventBaseOam_32x8;[m
+  extern const struct OamData gObjectEventBaseOam_32x32;[m
+[32m+ extern const struct OamData gObjectEventBaseOam_64x64;[m
+[32m+ extern const struct SubspriteTable sOamTables_32x32[];[m
+[32m+ extern const struct SubspriteTable sOamTables_64x64[];[m
+[32m+ extern const union AnimCmd *const sAnimTable_Following[];[m
+[32m+ extern const union AnimCmd *const sAnimTable_Following_Asym[];[m
+  extern const struct SpriteTemplate *const gFieldEffectObjectTemplatePointers[];[m
+[31m -extern const u8 gReflectionEffectPaletteMap[];[m
+  [m
+[32m +extern const u16 *const gBerryTreeObjectEventGraphicsIdTablePointers[];[m
+  extern const struct SpriteFrameImage *const gBerryTreePicTablePointers[];[m
+[31m -extern const u8 *const gBerryTreePaletteSlotTablePointers[];[m
+[32m +extern const u16 *const gBerryTreePaletteSlotTablePointers[];[m
+  [m
+  void ResetObjectEvents(void);[m
+  u8 GetMoveDirectionAnimNum(u8 direction);[m
+[36m@@@ -114,22 -136,29 +136,32 @@@[m [mvoid OverrideSecretBaseDecorationSprite[m
+  void GetMapCoordsFromSpritePos(s16 x, s16 y, s16 *destX, s16 *destY);[m
+  u8 GetFaceDirectionAnimNum(u8 direction);[m
+  void SetSpritePosToOffsetMapCoords(s16 *x, s16 *y, s16 dx, s16 dy);[m
+[32m+ void ClearObjectEventMovement(struct ObjectEvent *objectEvent, struct Sprite *sprite);[m
+  void ObjectEventClearHeldMovement(struct ObjectEvent *);[m
+  void ObjectEventClearHeldMovementIfActive(struct ObjectEvent *);[m
+[32m+ struct Pokemon *GetFirstLiveMon(void);[m
+[32m+ void UpdateFollowingPokemon(void);[m
+[32m+ void RemoveFollowingPokemon(void);[m
+[32m+ struct ObjectEvent *GetFollowerObject(void);[m
+[31m -void TrySpawnObjectEvents(s16 cameraX, s16 cameraY);[m
+[32m +void TrySpawnObjectEvents(s16, s16);[m
+[32m +u8 CreateObjectSprite(u16 graphicsId, u8 a1, s16 x, s16 y, u8 z, u8 direction);[m
+  u8 CreateObjectGraphicsSprite(u16, void (*)(struct Sprite *), s16 x, s16 y, u8 subpriority);[m
+[32m+ u8 TrySpawnObjectEvent(u8 localId, u8 mapNum, u8 mapGroup);[m
+[32m+ u8 SpawnSpecialObjectEventParameterized(u16 graphicsId, u8 movementBehavior, u8 localId, s16 x, s16 y, u8 elevation);[m
+[32m +u8 TrySpawnObjectEvent(u8, u8, u8);[m
+[32m +u8 SpawnSpecialObjectEventParameterized(u16 graphicsId, u8 movementBehavior, u8 localId, s16 x, s16 y, u8 elevation);[m
+  u8 SpawnSpecialObjectEvent(struct ObjectEventTemplate *);[m
+  void SetSpritePosToMapCoords(s16 mapX, s16 mapY, s16 *destX, s16 *destY);[m
+[31m- void CameraObjectReset1(void);[m
+[32m+ void CameraObjectReset(void);[m
+[32m+ u8 UpdateSpritePaletteByTemplate(const struct SpriteTemplate *, struct Sprite *);[m
+  void ObjectEventSetGraphicsId(struct ObjectEvent *, u16 graphicsId);[m
+[31m- void ObjectEventTurn(struct ObjectEvent *, u8);[m
+[31m- void ObjectEventTurnByLocalIdAndMap(u8, u8, u8, u8);[m
+[32m+ void ObjectEventTurn(struct ObjectEvent *, u8 direction);[m
+[32m+ void ObjectEventTurnByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup, u8 direction);[m
+  const struct ObjectEventGraphicsInfo *GetObjectEventGraphicsInfo(u16 graphicsId);[m
+[31m- void SetObjectInvisibility(u8, u8, u8, bool8);[m
+[32m+ void SetObjectInvisibility(u8 localId, u8 mapNum, u8 mapGroup, bool8 invisible);[m
+  void FreeAndReserveObjectSpritePalettes(void);[m
+[32m+ u8 LoadObjectEventPalette(u16 paletteTag);[m
+[32m+ u8 LoadPlayerObjectEventPalette(u8 gender);[m
+  void SetObjectEventSpritePosByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup, s16 x, s16 y);[m
+  void ResetObjectSubpriority(u8 localId, u8 mapNum, u8 mapGroup);[m
+  void SetObjectSubpriority(u8 localId, u8 mapNum, u8 mapGroup, u8 subpriority);[m
+[1mdiff --cc include/field_player_avatar.h[m
+[1mindex 760fc08d93,caf28afb87..7b72c6768e[m
+[1m--- a/include/field_player_avatar.h[m
+[1m+++ b/include/field_player_avatar.h[m
+[36m@@@ -5,6 -5,6 +5,8 @@@[m [mvoid PlayerStep(u8 direction, u16 newKe[m
+  void ClearPlayerAvatarInfo(void);[m
+  void SetPlayerAvatarExtraStateTransition(u16, u8);[m
+  u8 GetPlayerAvatarGenderByGraphicsId(u16);[m
+[32m++void SetPlayerAvatarExtraStateTransition(u16, u8);[m
+[32m++u8 GetPlayerAvatarGenderByGraphicsId(u16);[m
+  bool8 TestPlayerAvatarFlags(u8);[m
+  u8 GetPlayerAvatarSpriteId(void);[m
+  void PlayerGetDestCoords(s16 *, s16 *);[m
+[36m@@@ -38,11 -38,11 +40,11 @@@[m [mvoid PlayerFreeze(void)[m
+  void StopPlayerAvatar(void);[m
+  void SetSpinStartFacingDir(u8);[m
+  void GetXYCoordsOneStepInFrontOfPlayer(s16 *xPtr, s16 *yPtr);[m
+[31m- u16 GetRivalAvatarGraphicsIdByStateIdAndGender(u8, u8);[m
+[32m+ u16 GetRivalAvatarGraphicsIdByStateIdAndGender(u8 state, u8 gender);[m
+  void SetPlayerAvatarFieldMove(void);[m
+  u16 GetPlayerAvatarGraphicsIdByCurrentState(void);[m
+[31m -void SetPlayerAvatarStateMask(u8 flags);[m
+[31m -u16 GetPlayerAvatarGraphicsIdByStateId(u8 state);[m
+[32m +void SetPlayerAvatarStateMask(u8 a);[m
+[32m +u16 GetPlayerAvatarGraphicsIdByStateId(u8 a);[m
+  u8 GetJumpSpecialMovementAction(u32);[m
+  bool8 PartyHasMonWithSurf(void);[m
+  bool8 IsPlayerFacingSurfableFishableWater(void);[m
+[1mdiff --cc spritesheet_rules.mk[m
+[1mindex d17a2f3a7e,7855bf8d21..6cf5bf3c70[m
+[1m--- a/spritesheet_rules.mk[m
+[1m+++ b/spritesheet_rules.mk[m
+[36m@@@ -719,17 -732,3746 +732,3758 @@@[m [m$(FLDEFFGFXDIR)/secret_power_tree.4bpp[m
+  $(FLDEFFGFXDIR)/record_mix_lights.4bpp: %.4bpp: %.png[m
+  	$(GFX) $< $@ -mwidth 4 -mheight 1[m
+  [m
+[32m+ $(POKEMONGFXDIR)/question_mark/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/bulbasaur/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ivysaur/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/venusaur/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/charmander/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/charmeleon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/charizard/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/squirtle/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/wartortle/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/blastoise/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/caterpie/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/metapod/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/butterfree/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/weedle/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kakuna/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/beedrill/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/pidgey/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/pidgeotto/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/pidgeot/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/rattata/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/raticate/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/spearow/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/fearow/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ekans/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/arbok/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/pikachu/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/raichu/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/sandshrew/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/sandslash/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/nidoran_f/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/nidorina/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/nidoqueen/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/nidoran_m/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/nidorino/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/nidoking/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/clefairy/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/clefable/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/vulpix/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ninetales/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/jigglypuff/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/wigglytuff/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/zubat/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/golbat/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/oddish/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/gloom/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/vileplume/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/paras/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/parasect/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/venonat/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/venomoth/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/diglett/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/dugtrio/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/meowth/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/persian/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/psyduck/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/golduck/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/mankey/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/primeape/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/growlithe/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/arcanine/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/poliwag/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/poliwhirl/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/poliwrath/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/abra/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kadabra/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/alakazam/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/machop/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/machoke/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/machamp/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/bellsprout/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/weepinbell/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/victreebel/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/tentacool/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/tentacruel/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/geodude/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/graveler/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/golem/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ponyta/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/rapidash/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/slowpoke/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/slowbro/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/magnemite/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/magneton/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/farfetchd/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/doduo/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/dodrio/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/seel/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/dewgong/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/grimer/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/muk/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/shellder/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/cloyster/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/gastly/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/haunter/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/gengar/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/onix/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/drowzee/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/hypno/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/krabby/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kingler/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/voltorb/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/electrode/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/exeggcute/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/exeggutor/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/cubone/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/marowak/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/hitmonlee/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/hitmonchan/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/lickitung/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/koffing/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/weezing/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/rhyhorn/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/rhydon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/chansey/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/tangela/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kangaskhan/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/horsea/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/seadra/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/goldeen/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/seaking/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/staryu/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/starmie/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/mr_mime/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/scyther/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/jynx/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/electabuzz/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/magmar/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/pinsir/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/tauros/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/magikarp/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/gyarados/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/lapras/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ditto/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/eevee/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/vaporeon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/jolteon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/flareon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/porygon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/omanyte/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/omastar/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kabuto/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kabutops/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/aerodactyl/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/snorlax/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/articuno/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/zapdos/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/moltres/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/dratini/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/dragonair/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/dragonite/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/mewtwo/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/mew/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/chikorita/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/bayleef/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/meganium/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/cyndaquil/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/quilava/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/typhlosion/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/totodile/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/croconaw/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/feraligatr/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/sentret/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/furret/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/hoothoot/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/noctowl/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ledyba/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ledian/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/spinarak/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ariados/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/crobat/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/chinchou/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/lanturn/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/pichu/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/cleffa/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/igglybuff/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/togepi/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/togetic/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/natu/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/xatu/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/mareep/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/flaaffy/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ampharos/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/bellossom/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/marill/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/azumarill/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/sudowoodo/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/politoed/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/hoppip/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/skiploom/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/jumpluff/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/aipom/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/sunkern/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/sunflora/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/yanma/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/wooper/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/quagsire/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/espeon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/umbreon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/murkrow/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/slowking/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/misdreavus/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/b/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/c/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/d/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/e/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/f/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/g/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/h/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/i/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/j/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/k/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/l/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/m/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/n/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/o/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/p/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/q/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/r/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/s/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/t/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/u/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/v/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/w/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/x/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/y/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/z/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/exclamation_mark/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/unown/question_mark/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/wobbuffet/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/girafarig/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/pineco/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/forretress/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/dunsparce/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/gligar/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/steelix/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 8 -mheight 8[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/snubbull/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/granbull/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/qwilfish/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/scizor/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/shuckle/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/heracross/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/sneasel/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/teddiursa/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ursaring/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/slugma/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/magcargo/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/swinub/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/piloswine/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/corsola/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/remoraid/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/octillery/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/delibird/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/mantine/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/skarmory/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/houndour/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/houndoom/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kingdra/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/phanpy/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/donphan/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/porygon2/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/stantler/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/smeargle/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/tyrogue/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/hitmontop/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/smoochum/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/elekid/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/magby/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/miltank/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/blissey/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/raikou/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/entei/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/suicune/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/larvitar/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/pupitar/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/tyranitar/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/lugia/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 8 -mheight 8[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ho_oh/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 8 -mheight 8[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/celebi/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/treecko/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/grovyle/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/sceptile/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/torchic/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/combusken/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/blaziken/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/mudkip/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/marshtomp/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/swampert/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/poochyena/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/mightyena/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/zigzagoon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/linoone/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/wurmple/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/silcoon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/beautifly/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/cascoon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/dustox/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/lotad/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/lombre/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ludicolo/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/seedot/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/nuzleaf/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/shiftry/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/taillow/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/swellow/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/wingull/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/pelipper/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ralts/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kirlia/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/gardevoir/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/surskit/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/masquerain/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/shroomish/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/breloom/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/slakoth/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/vigoroth/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/slaking/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/nincada/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ninjask/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/shedinja/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/whismur/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/loudred/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/exploud/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/makuhita/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/hariyama/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/azurill/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/nosepass/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/skitty/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/delcatty/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/sableye/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/mawile/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/aron/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/lairon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/aggron/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/meditite/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/medicham/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/electrike/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/manectric/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/plusle/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/minun/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/volbeat/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/illumise/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/roselia/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/gulpin/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/swalot/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/carvanha/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/sharpedo/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/wailmer/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/wailord/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 8 -mheight 8[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/numel/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/camerupt/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/torkoal/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/spoink/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/grumpig/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/spinda/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/trapinch/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/vibrava/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/flygon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/cacnea/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/cacturne/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/swablu/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/altaria/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/zangoose/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/seviper/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/lunatone/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/solrock/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/barboach/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/whiscash/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/corphish/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/crawdaunt/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/baltoy/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/claydol/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/lileep/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/cradily/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/anorith/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/armaldo/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/feebas/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/milotic/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/castform/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/castform/sunny/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/castform/rainy/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/castform/snowy/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kecleon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/shuppet/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/banette/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/duskull/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/dusclops/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/tropius/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/chimecho/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/absol/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/wynaut/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/snorunt/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/glalie/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/spheal/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/sealeo/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/walrein/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/clamperl/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/huntail/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/gorebyss/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/relicanth/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/luvdisc/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/bagon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/shelgon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/salamence/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/beldum/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/metang/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/metagross/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/regirock/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/regice/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/registeel/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/latias/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/latios/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kyogre/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 8 -mheight 8[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/groudon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 8 -mheight 8[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/rayquaza/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 8 -mheight 8[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/jirachi/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/deoxys/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/turtwig/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/grotle/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/torterra/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/chimchar/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/monferno/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/infernape/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/piplup/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/prinplup/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/empoleon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/starly/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/staravia/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/staraptor/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/bidoof/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/bibarel/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kricketot/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/kricketune/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/shinx/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/luxio/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/luxray/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/budew/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/roserade/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/cranidos/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/rampardos/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/shieldon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/bastiodon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/burmy/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/wormadam/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/mothim/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/combee/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/vespiquen/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/pachirisu/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/buizel/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/floatzel/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/cherubi/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/cherrim/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/shellos/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/gastrodon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/ambipom/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/drifloon/overworld.4bpp: %.4bpp: %.png[m
+[32m+ 	$(GFX) $< $@ -mwidth 4 -mheight 4[m
+[32m+ [m
+[32m+ $(POKEMONGFXDIR)/drifblim/overworl

@@ -11857,18 +11857,82 @@ F_TRAINER_FEMALE |
     [TRAINER_ROXANNE_1] =
     {
 #line 4792
-        .trainerName = _("ROXANNE"),
+        .trainerName = _("Kipp"),
 #line 4793
         .trainerClass = TRAINER_CLASS_LEADER,
 #line 4794
         .trainerPic = TRAINER_PIC_LEADER_ROXANNE,
-        .trainerName = _("KIPP"),
-        .items = {ITEM_POTION, ITEM_POTION, ITEM_NONE, ITEM_NONE},
+        .encounterMusic_gender = 
+#line 4796
+            TRAINER_ENCOUNTER_MUSIC_FEMALE,
+#line 4797
+        .items = { ITEM_POTION, ITEM_POTION },
+#line 4798
         .doubleBattle = TRUE,
-        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_VIABILITY | AI_FLAG_HELP_PARTNER | AI_FLAG_ACE_POKEMON | AI_FLAG_SETUP_FIRST_TURN,
-        .party = TRAINER_PARTY(sParty_Roxanne1),
+#line 4799
+        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_VIABILITY,
+        .partySize = 3,
+        .party = (const struct TrainerMon[])
+        {
+            {
+#line 4801
+            .species = SPECIES_GEODUDE,
+            .gender = TRAINER_MON_RANDOM_GENDER,
+#line 4803
+            .iv = TRAINER_PARTY_IVS(12, 12, 12, 12, 12, 12),
+#line 4802
+            .lvl = 12,
+            .nature = NATURE_HARDY,
+            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            .moves = {
+#line 4804
+                MOVE_TACKLE,
+                MOVE_DEFENSE_CURL,
+                MOVE_ROCK_THROW,
+                MOVE_ROCK_TOMB,
+            },
+            },
+            {
+#line 4809
+            .species = SPECIES_GEODUDE,
+            .gender = TRAINER_MON_RANDOM_GENDER,
+#line 4811
+            .iv = TRAINER_PARTY_IVS(12, 12, 12, 12, 12, 12),
+#line 4810
+            .lvl = 12,
+            .nature = NATURE_HARDY,
+            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            .moves = {
+#line 4812
+                MOVE_TACKLE,
+                MOVE_DEFENSE_CURL,
+                MOVE_ROCK_THROW,
+                MOVE_ROCK_TOMB,
+            },
+            },
+            {
+#line 4817
+            .species = SPECIES_NOSEPASS,
+            .gender = TRAINER_MON_RANDOM_GENDER,
+#line 4817
+            .heldItem = ITEM_ORAN_BERRY,
+#line 4819
+            .iv = TRAINER_PARTY_IVS(24, 24, 24, 24, 24, 24),
+#line 4818
+            .lvl = 15,
+            .nature = NATURE_HARDY,
+            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            .moves = {
+#line 4820
+                MOVE_BLOCK,
+                MOVE_HARDEN,
+                MOVE_TACKLE,
+                MOVE_ROCK_TOMB,
+            },
+            },
+        },
     },
-
+#line 4825
     [TRAINER_BRAWLY_1] =
     {
 #line 4826
@@ -11883,8 +11947,6 @@ F_TRAINER_FEMALE |
 #line 4831
         .items = { ITEM_SUPER_POTION, ITEM_SUPER_POTION },
 #line 4832
-        .trainerName = _("XINOTHY"),
-        .items = {ITEM_SUPER_POTION, ITEM_SUPER_POTION, ITEM_NONE, ITEM_NONE},
         .doubleBattle = FALSE,
 #line 4833
         .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_TRY_TO_FAINT | AI_FLAG_CHECK_VIABILITY,

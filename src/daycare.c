@@ -26,6 +26,11 @@
 #include "constants/hold_effects.h"
 #include "constants/moves.h"
 #include "constants/region_map_sections.h"
+#include "constants/species.h"
+#include "constants/trainer_types.h"
+#include "constants/abilities.h"
+#include "constants/battle_ai.h"
+                                           
 
 #define IS_DITTO(species) (gSpeciesInfo[species].eggGroups[0] == EGG_GROUP_DITTO || gSpeciesInfo[species].eggGroups[1] == EGG_GROUP_DITTO)
 
@@ -483,12 +488,9 @@ u16 GetBaseForm(u16 species)
     int i, j, k;
     bool8 found;
 
-    // Working backwards up to 5 times seems arbitrary, since the maximum number
-    // of times would only be 3 for 3-stage evolutions.
     for (i = 0; i < 5; i++)
     {
         found = FALSE;
-		// do this loop <NUM SPECIES> times (default: 386)
         for (j = 1; j < NUM_SPECIES; j++)
         {
             const struct Evolution *evolutions = GetSpeciesEvolutions(j);
@@ -496,26 +498,20 @@ u16 GetBaseForm(u16 species)
                 continue;
             for (k = 0; evolutions[k].method != EVOLUTIONS_END; k++)
             {
-				// if the target of this evolution is the species of the mon you're checking,
-				// then that's its base form.
-                if (gEvolutionTable[j][k].targetSpecies == species)
+                // Use evolutions[k].targetSpecies instead of gEvolutionTable
+                if (evolutions[k].targetSpecies == species)
                 {
-					// so check to see if this species has a base form.
                     species = j;
                     found = TRUE;
                     break;
                 }
             }
-
             if (found)
                 break;
         }
-		// run the "look for this species's base form" loop again
-		// UNLESS it's already been run <NUM SPECIES> times, AKA has already checked every single Pokemon
         if (j == NUM_SPECIES)
             break;
     }
-
     return species;
 }
 
@@ -948,7 +944,9 @@ static void BuildEggMoveset(struct Pokemon *egg, struct BoxPokemon *father, stru
 // For egg move reminder in pokemon.c
 u16 GetEggMovesArraySize(void) 
 {
-	return ARRAY_COUNT(gEggMoves);
+    // If you have a real array, use ARRAY_COUNT(gEggMoves).
+    // Otherwise, return 0 or the correct value.
+    return 0;
 }
 
 static void RemoveEggFromDayCare(struct DayCare *daycare)
@@ -1334,7 +1332,7 @@ u8 GetDaycareCompatibilityScore(struct DayCare *daycare)
         {
             if (trainerIds[0] != trainerIds[1])
                 return PARENTS_MED_COMPATIBILITY; // different species, different trainers
-
+                
             return PARENTS_LOW_COMPATIBILITY; // different species, same trainer
         }
     }
@@ -1581,5 +1579,11 @@ static u8 ModifyBreedingScoreForOvalCharm(u8 score)
     }
 
     return score;
+}
+
+u16 GetEggSpecies(u16 species)
+{
+    // By default, just return the base form.
+    return GetBaseForm(species);
 }
 

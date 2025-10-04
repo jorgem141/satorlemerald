@@ -4789,13 +4789,13 @@ IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 - Crunch
 
 === TRAINER_ROXANNE_1 ===
-Name: ROXANNE
+Name: Kipp
 Class: Leader
 Pic: Leader Roxanne
-Gender: Female
+Gender: Male
 Music: Female
 Items: Potion / Potion
-Double Battle: No
+Double Battle: Yes
 AI: Check Bad Move / Try To Faint / Check Viability
 
 Geodude

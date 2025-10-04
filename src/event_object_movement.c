@@ -1447,23 +1447,19 @@ static u8 TrySetupObjectEventSprite(const struct ObjectEventTemplate *objectEven
 
     objectEvent = &gObjectEvents[objectEventId];
     graphicsInfo = GetObjectEventGraphicsInfo(objectEvent->graphicsId);
-    if (spriteTemplate->paletteTag != 0xFFFF)
+    paletteSlot = graphicsInfo->paletteSlot;
+    if (paletteSlot == PALSLOT_PLAYER)
     {
-        LoadObjectEventPalette(spriteTemplate->paletteTag);
-        UpdatePaletteGammaType(IndexOfSpritePaletteTag(spriteTemplate->paletteTag), COLOR_MAP_CONTRAST);
-    if (spriteTemplate->paletteTag != TAG_NONE && spriteTemplate->paletteTag != OBJ_EVENT_PAL_TAG_DYNAMIC)
-        LoadObjectEventPalette(spriteTemplate->paletteTag);
-
-    if (objectEvent->movementType == MOVEMENT_TYPE_INVISIBLE)
-        objectEvent->invisible = TRUE;
-
-    if (OW_GFX_COMPRESS)
-        spriteTemplate->tileTag = LoadSheetGraphicsInfo(graphicsInfo, objectEvent->graphicsId, NULL);
-
-    if (objectEvent->graphicsId >= OBJ_EVENT_GFX_MON_BASE + SPECIES_SHINY_TAG)
+        LoadPlayerObjectReflectionPalette(graphicsInfo->paletteTag, paletteSlot);
+    }
+    else if (paletteSlot == PALSLOT_NPC_SPECIAL)
     {
-        objectEvent->shiny = TRUE;
-        objectEvent->graphicsId -= SPECIES_SHINY_TAG;
+        LoadSpecialObjectReflectionPalette(graphicsInfo->paletteTag, paletteSlot);
+    }
+    else if (paletteSlot >= 16)
+    {
+        paletteSlot -= 16;
+        _PatchObjectPalette(graphicsInfo->paletteTag, paletteSlot);
     }
 
     if (objectEvent->graphicsId >= OBJ_EVENT_GFX_MON_BASE + SPECIES_SHINY_TAG)
@@ -2827,36 +2823,6 @@ static u8 FindObjectEventPaletteIndexByTag(u16 tag)
     return 0xFF;
 }
 
-void LoadPlayerObjectReflectionPalette(u16 tag, u8 slot)
-{
-    u8 i;
-
-    PatchObjectPalette(tag, slot);
-    for (i = 0; sPlayerReflectionPaletteSets[i].tag != OBJ_EVENT_PAL_TAG_NONE; i++)
-    {
-        if (sPlayerReflectionPaletteSets[i].tag == tag)
-        {
-            PatchObjectPalette(sPlayerReflectionPaletteSets[i].data[sCurrentReflectionType], gReflectionEffectPaletteMap[slot]);
-            return;
-        }
-    }
-}
-
-void LoadSpecialObjectReflectionPalette(u16 tag, u8 slot)
-{
-    u8 i;
-
-    sCurrentSpecialObjectPaletteTag = tag;
-    PatchObjectPalette(tag, slot);
-    for (i = 0; sSpecialObjectReflectionPaletteSets[i].tag != OBJ_EVENT_PAL_TAG_NONE; i++)
-    {
-        if (sSpecialObjectReflectionPaletteSets[i].tag == tag)
-        {
-            PatchObjectPalette(sSpecialObjectReflectionPaletteSets[i].data[sCurrentReflectionType], gReflectionEffectPaletteMap[slot]);
-            return;
-        }
-    }
-}
 
 static void UNUSED IncrementObjectEventCoords(struct ObjectEvent *objectEvent, s16 x, s16 y)
 {
