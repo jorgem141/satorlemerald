@@ -27,11 +27,6 @@
 #include "constants/hold_effects.h"
 #include "constants/moves.h"
 #include "constants/region_map_sections.h"
-#include "constants/species.h"
-#include "constants/trainer_types.h"
-#include "constants/abilities.h"
-#include "constants/battle_ai.h"
-                                           
 
 #define IS_DITTO(species) (gSpeciesInfo[species].eggGroups[0] == EGG_GROUP_DITTO || gSpeciesInfo[species].eggGroups[1] == EGG_GROUP_DITTO)
 
@@ -498,11 +493,13 @@ static void UNUSED ClearAllDaycareData(struct DayCare *daycare)
 // Determines what the species of an Egg would be based on the given species.
 // It determines this by working backwards through the evolution chain of the
 // given species.
-u16 GetBaseForm(u16 species)
+static u16 GetEggSpecies(u16 species)
 {
     int i, j, k;
     bool8 found;
 
+    // Working backwards up to 5 times seems arbitrary, since the maximum number
+    // of times would only be 3 for 3-stage evolutions.
     for (i = 0; i < 5; i++)
     {
         found = FALSE;
@@ -513,20 +510,22 @@ u16 GetBaseForm(u16 species)
                 continue;
             for (k = 0; evolutions[k].method != EVOLUTIONS_END; k++)
             {
-                // Use evolutions[k].targetSpecies instead of gEvolutionTable
-                if (evolutions[k].targetSpecies == species)
+                if (SanitizeSpeciesId(evolutions[k].targetSpecies) == species)
                 {
                     species = j;
                     found = TRUE;
                     break;
                 }
             }
+
             if (found)
                 break;
         }
+
         if (j == NUM_SPECIES)
             break;
     }
+
     return species;
 }
 
@@ -934,14 +933,6 @@ static void BuildEggMoveset(struct Pokemon *egg, struct BoxPokemon *father, stru
             }
         }
     }
-}
-
-// For egg move reminder in pokemon.c
-u16 GetEggMovesArraySize(void) 
-{
-    // If you have a real array, use ARRAY_COUNT(gEggMoves).
-    // Otherwise, return 0 or the correct value.
-    return 0;
 }
 
 static void RemoveEggFromDayCare(struct DayCare *daycare)
@@ -1360,7 +1351,7 @@ u8 GetDaycareCompatibilityScore(struct DayCare *daycare)
         {
             if (trainerIds[0] != trainerIds[1])
                 return PARENTS_MED_COMPATIBILITY; // different species, different trainers
-                
+
             return PARENTS_LOW_COMPATIBILITY; // different species, same trainer
         }
     }

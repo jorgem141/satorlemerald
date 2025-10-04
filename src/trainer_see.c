@@ -21,9 +21,6 @@
 #include "constants/field_effects.h"
 #include "constants/trainer_types.h"
 
-extern const struct SpritePalette sObjectEventSpritePalettes[];
-extern const struct SpritePalette gObjectEventPal_Npc1;
-
 // this file's functions
 static u8 CheckTrainer(u8 objectEventId);
 static u8 GetTrainerApproachDistance(struct ObjectEvent *trainerObj);
@@ -903,12 +900,7 @@ void TryPrepareSecondApproachingTrainer(void)
 
 u8 FldEff_ExclamationMarkIcon(void)
 {
-    u8 spriteId, paletteNum;
-
-    LoadObjectEventPalette(0x1100); //LoadObjectEventPalette(OBJ_EVENT_PAL_TAG_BRENDAN)
-    UpdatePaletteGammaType(IndexOfSpritePaletteTag(0x1100), COLOR_MAP_CONTRAST);
-    UpdateSpritePaletteWithWeather(IndexOfSpritePaletteTag(0x1100));
-    spriteId = CreateSpriteAtEnd(&sSpriteTemplate_ExclamationQuestionMark, 0, 0, 0x52);
+    u8 spriteId = CreateSpriteAtEnd(&sSpriteTemplate_ExclamationQuestionMark, 0, 0, 0x53);
 
     if (spriteId != MAX_SPRITES)
     {
@@ -926,13 +918,7 @@ u8 FldEff_QuestionMarkIcon(void)
     {
         // Use follower emotes
         u8 emotion = gFieldEffectArguments[7];
-        spriteId;
-
-    LoadObjectEventPalette(0x1100); //LoadObjectEventPalette(OBJ_EVENT_PAL_TAG_BRENDAN)
-    UpdatePaletteGammaType(IndexOfSpritePaletteTag(0x1100), COLOR_MAP_CONTRAST);
-    UpdateSpritePaletteWithWeather(IndexOfSpritePaletteTag(0x1100));
-
-    spriteId = CreateSpriteAtEnd(&sSpriteTemplate_Emote, 0, 0, 0x52);
+        spriteId = CreateSpriteAtEnd(&sSpriteTemplate_Emote, 0, 0, 0x52);
         if (spriteId == MAX_SPRITES)
             return 0;
         SetIconSpriteData(&gSprites[spriteId], FLDEFF_EMOTE, emotion); // Set animation based on emotion
@@ -952,12 +938,7 @@ u8 FldEff_QuestionMarkIcon(void)
 
 u8 FldEff_HeartIcon(void)
 {
-    u8 spriteId;
-
-    LoadSpritePalette(&gObjectEventPal_Npc1);
-    UpdatePaletteGammaType(IndexOfSpritePaletteTag(0x1004), COLOR_MAP_CONTRAST);
-    UpdateSpritePaletteWithWeather(IndexOfSpritePaletteTag(0x1004));
-    spriteId = CreateSpriteAtEnd(&sSpriteTemplate_HeartIcon, 0, 0, 0x52);
+    u8 spriteId = CreateSpriteAtEnd(&sSpriteTemplate_HeartIcon, 0, 0, 0x52);
 
     if (spriteId != MAX_SPRITES)
     {
