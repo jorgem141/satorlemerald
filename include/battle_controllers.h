@@ -98,8 +98,7 @@ enum {
 
 // Special return values in gBattleBufferB from Battle Controller functions.
 #define RET_VALUE_LEVELED_UP   11
-#define RET_MEGA_EVOLUTION 0x80
-#define RET_ULTRA_BURST 0x70
+#define RET_GIMMICK            (1 << 7)
 
 struct UnusedControllerStruct
 {
@@ -126,11 +125,7 @@ struct ChooseMoveStruct
     u8 currentPp[MAX_MON_MOVES];
     u8 maxPp[MAX_MON_MOVES];
     u16 species;
-    u8 monType1;
-    u8 monType2;
-    u8 monType3;
-    struct MegaEvolutionData mega;
-    struct UltraBurstData burst;
+    u8 monTypes[3];
     struct ZMoveData zmove;
 };
 
@@ -250,7 +245,7 @@ void BtlController_EmitDrawPartyStatusSummary(u32 battler, u32 bufferId, struct 
 void BtlController_EmitHidePartyStatusSummary(u32 battler, u32 bufferId);
 void BtlController_EmitEndBounceEffect(u32 battler, u32 bufferId);
 void BtlController_EmitSpriteInvisibility(u32 battler, u32 bufferId, bool8 isInvisible);
-void BtlController_EmitBattleAnimation(u32 battler, u32 bufferId, u8 animationId, u16 argument);
+void BtlController_EmitBattleAnimation(u32 battler, u32 bufferId, u8 animationId, struct DisableStruct* disableStructPtr, u16 argument);
 void BtlController_EmitLinkStandbyMsg(u32 battler, u32 bufferId, u8 mode, bool32 record);
 void BtlController_EmitResetActionMoveSelection(u32 battler, u32 bufferId, u8 caseId);
 void BtlController_EmitEndLinkBattle(u32 battler, u32 bufferId, u8 battleOutcome);
@@ -260,7 +255,7 @@ void BattleControllerComplete(u32 battler); // Can be used for all the controlle
 void BtlController_Empty(u32 battler); // Empty command, does nothing, only completes the execution.
 void BtlController_TerminatorNop(u32 battler); // Dummy function at the end of the table.
 void BattleControllerDummy(u32 battler);
-void StartSendOutAnim(u32 battler, bool32 dontClearSubstituteBit);
+void StartSendOutAnim(u32 battler, bool32 dontClearSubstituteBit, bool32 doSlideIn);
 void Controller_WaitForString(u32 battler);
 void Controller_WaitForHealthBar(u32 battler);
 
@@ -304,6 +299,7 @@ void BtlController_HandleBattleAnimation(u32 battler, bool32 ignoreSE, bool32 up
 // player controller
 void SetControllerToPlayer(u32 battler);
 void SetBattleEndCallbacks(u32 battler);
+void PlayerHandleBallThrowAnim(u32 battler);
 void PlayerHandleExpUpdate(u32 battler);
 u32 LinkPlayerGetTrainerPicId(u32 multiplayerId);
 void CB2_SetUpReshowBattleScreenAfterMenu(void);

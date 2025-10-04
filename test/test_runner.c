@@ -1,11 +1,12 @@
 #include <stdarg.h>
 #include "global.h"
-#include "characters.h"
 #include "gpu_regs.h"
 #include "load_save.h"
 #include "main.h"
 #include "malloc.h"
 #include "random.h"
+#include "task.h"
+#include "constants/characters.h"
 #include "test_runner.h"
 #include "test/test.h"
 
@@ -30,7 +31,6 @@ void TestRunner_Battle(const struct Test *);
 
 static bool32 MgbaOpen_(void);
 static void MgbaExit_(u8 exitCode);
-static s32 MgbaPuts_(const char *s);
 static s32 MgbaVPrintf_(const char *fmt, va_list va);
 static void Intr_Timer2(void);
 
@@ -106,6 +106,8 @@ static u32 AssignCostToRunner(void)
 
 void CB2_TestRunner(void)
 {
+top:
+
     switch (gTestRunnerState.state)
     {
     case STATE_INIT:
@@ -119,8 +121,11 @@ void CB2_TestRunner(void)
         MoveSaveBlocks_ResetHeap();
         ClearSav1();
         ClearSav2();
+        ClearSav3();
 
         gIntrTable[7] = Intr_Timer2;
+
+        gSaveBlock2Ptr->optionsBattleStyle = OPTIONS_BATTLE_STYLE_SET;
 
         // The current test restarted the ROM (e.g. by jumping to NULL).
         if (sCurrentTest.address != 0)
@@ -176,7 +181,8 @@ void CB2_TestRunner(void)
                 break;
         }
 
-        MgbaPrintf_(":N%s", gTestRunnerState.test->name);
+        Test_MgbaPrintf(":N%s", gTestRunnerState.test->name);
+        Test_MgbaPrintf(":L%s:%d", gTestRunnerState.test->filename);
         gTestRunnerState.result = TEST_RESULT_PASS;
         gTestRunnerState.expectedResult = TEST_RESULT_PASS;
         gTestRunnerState.expectLeaks = FALSE;
@@ -185,6 +191,7 @@ void CB2_TestRunner(void)
         else
             gTestRunnerState.timeoutSeconds = UINT_MAX;
         InitHeap(gHeap, HEAP_SIZE);
+        ResetTasks();
         EnableInterrupts(INTR_FLAG_TIMER2);
         REG_TM2CNT_L = UINT16_MAX - (274 * 60); // Approx. 1 second.
         REG_TM2CNT_H = TIMER_ENABLE | TIMER_INTR_ENABLE | TIMER_1024CLK;
@@ -214,6 +221,7 @@ void CB2_TestRunner(void)
         // NOTE: Assumes that the compiler interns __FILE__.
         if (gTestRunnerState.skipFilename == gTestRunnerState.test->filename) // Assumption fails for tests in this file.
         {
+            Test_MgbaPrintf(":L%s:%d", gTestRunnerState.test->filename, gTestRunnerState.failedAssumptionsBlockLine);
             gTestRunnerState.result = TEST_RESULT_ASSUMPTION_FAIL;
             return;
         }
@@ -237,6 +245,7 @@ void CB2_TestRunner(void)
         if (gTestRunnerState.result == TEST_RESULT_PASS
          && !gTestRunnerState.expectLeaks)
         {
+            int i;
             const struct MemBlock *head = HeapHead();
             const struct MemBlock *block = head;
             do
@@ -245,7 +254,7 @@ void CB2_TestRunner(void)
                  || !(EWRAM_START <= (uintptr_t)block->next && (uintptr_t)block->next < EWRAM_END)
                  || (block->next <= block && block->next != head))
                 {
-                    MgbaPrintf_("gHeap corrupted block at 0x%p", block);
+                    Test_MgbaPrintf("gHeap corrupted block at %p", block);
                     gTestRunnerState.result = TEST_RESULT_ERROR;
                     break;
                 }
@@ -254,14 +263,23 @@ void CB2_TestRunner(void)
                 {
                     const char *location = MemBlockLocation(block);
                     if (location)
-                        MgbaPrintf_("%s: %d bytes not freed", location, block->size);
+                        Test_MgbaPrintf("%s: %d bytes not freed", location, block->size);
                     else
-                        MgbaPrintf_("<unknown>: %d bytes not freed", block->size);
+                        Test_MgbaPrintf("<unknown>: %d bytes not freed", block->size);
                     gTestRunnerState.result = TEST_RESULT_FAIL;
                 }
                 block = block->next;
             }
             while (block != head);
+
+            for (i = 0; i < NUM_TASKS; i++)
+            {
+                if (gTasks[i].isActive)
+                {
+                    Test_MgbaPrintf("%p: task not freed", gTasks[i].func);
+                    gTestRunnerState.result = TEST_RESULT_FAIL;
+                }
+            }
         }
 
         if (gTestRunnerState.test->runner == &gAssumptionsRunner)
@@ -279,7 +297,7 @@ void CB2_TestRunner(void)
             if (gTestRunnerState.result == gTestRunnerState.expectedResult)
             {
                 color = "\e[32m";
-                MgbaPrintf_(":N%s", gTestRunnerState.test->name);
+                Test_MgbaPrintf(":N%s", gTestRunnerState.test->name);
             }
             else if (gTestRunnerState.result != TEST_RESULT_ASSUMPTION_FAIL || gTestRunnerSkipIsFail)
             {
@@ -289,12 +307,6 @@ void CB2_TestRunner(void)
             else
             {
                 color = "";
-            }
-
-            if (gTestRunnerState.result == TEST_RESULT_PASS
-             && gTestRunnerState.result != gTestRunnerState.expectedResult)
-            {
-                MgbaPuts_("\e[31mPlease remove KNOWN_FAILING if this test intentionally PASSes\e[0m");
             }
 
             switch (gTestRunnerState.result)
@@ -311,7 +323,10 @@ void CB2_TestRunner(void)
                 }
                 break;
             case TEST_RESULT_PASS:
-                result = "PASS";
+                if (gTestRunnerState.result != gTestRunnerState.expectedResult)
+                    result = "KNOWN_FAILING_PASS";
+                else
+                    result = "PASS";
                 break;
             case TEST_RESULT_ASSUMPTION_FAIL:
                 result = "ASSUMPTION_FAIL";
@@ -339,15 +354,20 @@ void CB2_TestRunner(void)
             }
 
             if (gTestRunnerState.result == TEST_RESULT_PASS)
-                MgbaPrintf_(":P%s%s\e[0m", color, result);
+            {
+                if (gTestRunnerState.result != gTestRunnerState.expectedResult)
+                    Test_MgbaPrintf(":U%s%s\e[0m", color, result);
+                else
+                    Test_MgbaPrintf(":P%s%s\e[0m", color, result);
+            }
             else if (gTestRunnerState.result == TEST_RESULT_ASSUMPTION_FAIL)
-                MgbaPrintf_(":A%s%s\e[0m", color, result);
+                Test_MgbaPrintf(":A%s%s\e[0m", color, result);
             else if (gTestRunnerState.result == TEST_RESULT_TODO)
-                MgbaPrintf_(":T%s%s\e[0m", color, result);
+                Test_MgbaPrintf(":T%s%s\e[0m", color, result);
             else if (gTestRunnerState.expectedResult == gTestRunnerState.result)
-                MgbaPrintf_(":K%s%s\e[0m", color, result);
+                Test_MgbaPrintf(":K%s%s\e[0m", color, result);
             else
-                MgbaPrintf_(":F%s%s\e[0m", color, result);
+                Test_MgbaPrintf(":F%s%s\e[0m", color, result);
         }
 
         break;
@@ -361,6 +381,9 @@ void CB2_TestRunner(void)
         MgbaExit_(gTestRunnerState.exitCode);
         break;
     }
+
+    if (gMain.callback2 == CB2_TestRunner)
+        goto top;
 }
 
 void Test_ExpectedResult(enum TestResult result)
@@ -386,7 +409,7 @@ static void FunctionTest_Run(void *data)
     do
     {
         if (gFunctionTestRunnerState->parameters)
-            MgbaPrintf_(":N%s %d/%d", gTestRunnerState.test->name, gFunctionTestRunnerState->runParameter + 1, gFunctionTestRunnerState->parameters);
+            Test_MgbaPrintf(":N%s %d/%d", gTestRunnerState.test->name, gFunctionTestRunnerState->runParameter + 1, gFunctionTestRunnerState->parameters);
         gFunctionTestRunnerState->parameters = 0;
         function();
     } while (++gFunctionTestRunnerState->runParameter < gFunctionTestRunnerState->parameters);
@@ -398,11 +421,21 @@ static void FunctionTest_TearDown(void *data)
     FREE_AND_SET_NULL(gFunctionTestRunnerState);
 }
 
+static bool32 FunctionTest_CheckProgress(void *data)
+{
+    bool32 madeProgress;
+    (void)data;
+    madeProgress = gFunctionTestRunnerState->checkProgressParameter < gFunctionTestRunnerState->runParameter;
+    gFunctionTestRunnerState->checkProgressParameter = gFunctionTestRunnerState->runParameter;
+    return madeProgress;
+}
+
 const struct TestRunner gFunctionTestRunner =
 {
     .setUp = FunctionTest_SetUp,
     .run = FunctionTest_Run,
     .tearDown = FunctionTest_TearDown,
+    .checkProgress = FunctionTest_CheckProgress,
 };
 
 static void Assumptions_Run(void *data)
@@ -463,9 +496,10 @@ static void Intr_Timer2(void)
     }
 }
 
-void Test_ExitWithResult(enum TestResult result, const char *fmt, ...)
+void Test_ExitWithResult(enum TestResult result, u32 stopLine, const char *fmt, ...)
 {
     gTestRunnerState.result = result;
+    gTestRunnerState.failedAssumptionsBlockLine = stopLine;
     ReinitCallbacks();
     if (gTestRunnerState.state == STATE_REPORT_RESULT
      && gTestRunnerState.result != gTestRunnerState.expectedResult)
@@ -498,12 +532,7 @@ static void MgbaExit_(u8 exitCode)
     asm("swi 0x3" :: "r" (_exitCode));
 }
 
-static s32 MgbaPuts_(const char *s)
-{
-    return MgbaPrintf_("%s", s);
-}
-
-s32 MgbaPrintf_(const char *fmt, ...)
+s32 Test_MgbaPrintf(const char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
@@ -531,6 +560,7 @@ static s32 MgbaVPrintf_(const char *fmt, va_list va)
     s32 c, d;
     u32 p;
     const char *s;
+    const u8 *pokeS;
     while (*fmt)
     {
         switch ((c = *fmt++))
@@ -567,6 +597,9 @@ static s32 MgbaVPrintf_(const char *fmt, va_list va)
                 p = va_arg(va, unsigned);
                 {
                     s32 n;
+                    i = MgbaPutchar_(i, '<');
+                    i = MgbaPutchar_(i, '0');
+                    i = MgbaPutchar_(i, 'x');
                     for (n = 0; n < 7; n++)
                     {
                         unsigned nybble = (p >> (24 - (4*n))) & 0xF;
@@ -575,6 +608,7 @@ static s32 MgbaVPrintf_(const char *fmt, va_list va)
                         else
                             i = MgbaPutchar_(i, 'a' + nybble - 10);
                     }
+                    i = MgbaPutchar_(i, '>');
                 }
                 break;
             case 'q':
@@ -625,8 +659,8 @@ static s32 MgbaVPrintf_(const char *fmt, va_list va)
                     i = MgbaPutchar_(i, c);
                 break;
             case 'S':
-                s = va_arg(va, const u8 *);
-                while ((c = *s++) != EOS)
+                pokeS = va_arg(va, const u8 *);
+                while ((c = *pokeS++) != EOS)
                 {
                     if ((c = gWireless_RSEtoASCIITable[c]) != '\0')
                         i = MgbaPutchar_(i, c);
@@ -650,4 +684,51 @@ static s32 MgbaVPrintf_(const char *fmt, va_list va)
         REG_DEBUG_FLAGS = MGBA_LOG_INFO | 0x100;
     }
     return i;
+}
+
+/* Entry point for the Debugging and Control System. Handles illegal
+ * instructions, which are typically caused by branching to an invalid
+ * address. */
+#if MODERN
+__attribute__((naked, section(".dacs"), target("arm")))
+#else
+__attribute__((naked, section(".dacs")))
+#endif
+void DACSEntry(void)
+{
+    asm(".arm\n\
+         ldr r0, =(DACSHandle + 1)\n\
+         bx r0\n");
+}
+
+#define DACS_LR (*(vu32 *)0x3007FEC)
+
+void DACSHandle(void)
+{
+    if (gTestRunnerState.state == STATE_RUN_TEST)
+        gTestRunnerState.state = STATE_REPORT_RESULT;
+    gTestRunnerState.result = TEST_RESULT_CRASH;
+    ReinitCallbacks();
+    DACS_LR = ((uintptr_t)JumpToAgbMainLoop & ~1) + 4;
+}
+
+static const struct Test *GetTest(void)
+{
+    const struct Test *test = gTestRunnerState.test;
+    return test;
+}
+
+u32 SourceLine(u32 sourceLineOffset)
+{
+    const struct Test *test = GetTest();
+    return test->sourceLine + sourceLineOffset;
+}
+
+u32 SourceLineOffset(u32 sourceLine)
+{
+    const struct Test *test = GetTest();
+    if (sourceLine - test->sourceLine > 0xFF)
+        return 0;
+    else
+        return sourceLine - test->sourceLine;
 }

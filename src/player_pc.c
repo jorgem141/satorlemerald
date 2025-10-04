@@ -191,10 +191,10 @@ static const u8 *const sItemStorage_OptionDescriptions[] =
 
 static const struct MenuAction sPlayerPCMenuActions[] =
 {
-    [MENU_ITEMSTORAGE] = { gText_ItemStorage, PlayerPC_ItemStorage },
-    [MENU_MAILBOX]     = { gText_Mailbox,     PlayerPC_Mailbox },
-    [MENU_DECORATION]  = { gText_Decoration,  PlayerPC_Decoration },
-    [MENU_TURNOFF]     = { gText_TurnOff,     PlayerPC_TurnOff }
+    [MENU_ITEMSTORAGE] = { gText_ItemStorage, {PlayerPC_ItemStorage} },
+    [MENU_MAILBOX]     = { gText_Mailbox,     {PlayerPC_Mailbox} },
+    [MENU_DECORATION]  = { gText_Decoration,  {PlayerPC_Decoration} },
+    [MENU_TURNOFF]     = { gText_TurnOff,     {PlayerPC_TurnOff} }
 };
 
 static const u8 sBedroomPC_OptionOrder[] =
@@ -216,13 +216,13 @@ static const u8 sPlayerPC_OptionOrder[] =
 
 static const struct MenuAction sItemStorage_MenuActions[] =
 {
-    [MENU_WITHDRAW] = { gText_WithdrawItem, ItemStorage_Withdraw },
-    [MENU_DEPOSIT]  = { gText_DepositItem,  ItemStorage_Deposit },
-    [MENU_TOSS]     = { gText_TossItem,     ItemStorage_Toss },
-    [MENU_EXIT]     = { gText_Cancel,       ItemStorage_Exit }
+    [MENU_WITHDRAW] = { gText_WithdrawItem, {ItemStorage_Withdraw} },
+    [MENU_DEPOSIT]  = { gText_DepositItem,  {ItemStorage_Deposit} },
+    [MENU_TOSS]     = { gText_TossItem,     {ItemStorage_Toss} },
+    [MENU_EXIT]     = { gText_Cancel,       {ItemStorage_Exit} }
 };
 
-static const struct ItemSlot sNewGamePCItems[] =
+static const u16 sNewGamePCItems[][2] =
 {
     { ITEM_POTION, 1 },
     { ITEM_NONE, 0 }
@@ -230,10 +230,10 @@ static const struct ItemSlot sNewGamePCItems[] =
 
 const struct MenuAction gMailboxMailOptions[] =
 {
-    { gText_Read,      Mailbox_DoMailRead },
-    { gText_MoveToBag, Mailbox_MoveToBag },
-    { gText_Give2,     Mailbox_Give },
-    { gText_Cancel2,   Mailbox_Cancel }
+    { gText_Read,      {Mailbox_DoMailRead} },
+    { gText_MoveToBag, {Mailbox_MoveToBag} },
+    { gText_Give2,     {Mailbox_Give} },
+    { gText_Cancel2,   {Mailbox_Cancel} }
 };
 
 static const struct WindowTemplate sWindowTemplates_MainMenus[] =
@@ -293,6 +293,7 @@ static const struct ListMenuTemplate sListMenuTemplate_ItemStorage =
     .scrollMultiple = LIST_NO_MULTIPLE_SCROLL,
     .fontId = FONT_NARROW,
     .cursorKind = CURSOR_BLACK_ARROW,
+    .textNarrowWidth = 74,
 };
 
 static const struct WindowTemplate sWindowTemplates_ItemStorage[ITEMPC_WIN_COUNT] =
@@ -355,16 +356,20 @@ static const struct WindowTemplate sWindowTemplates_ItemStorage[ITEMPC_WIN_COUNT
 
 static const u8 sSwapArrowTextColors[] = {TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_DARK_GRAY};
 
-// Macro below is likely a fakematch, equivalent to sNewGamePCItems[i].quantity
-#define GET_QUANTITY(i) ((u16)((u16 *)sNewGamePCItems + 1)[i * 2])
 void NewGameInitPCItems(void)
 {
     u8 i = 0;
     ClearItemSlots(gSaveBlock1Ptr->pcItems, PC_ITEMS_COUNT);
-    for(; sNewGamePCItems[i].itemId != ITEM_NONE && GET_QUANTITY(i) &&
-        AddPCItem(sNewGamePCItems[i].itemId, GET_QUANTITY(i)) == TRUE; i++);
+
+    while (TRUE)
+    {
+        if (sNewGamePCItems[i][0] == ITEM_NONE || sNewGamePCItems[i][1] == 0)
+            break;
+        if (AddPCItem(sNewGamePCItems[i][0], sNewGamePCItems[i][1]) != TRUE)
+            break;
+        i++;
+    }
 }
-#undef GET_QUANTITY
 
 void BedroomPC(void)
 {
@@ -388,7 +393,7 @@ void PlayerPC(void)
 
 static void InitPlayerPCMenu(u8 taskId)
 {
-    u16 *data;
+    s16 *data;
     struct WindowTemplate windowTemplate;
     data = gTasks[taskId].data;
 
@@ -408,7 +413,7 @@ static void InitPlayerPCMenu(u8 taskId)
 
 static void PlayerPCProcessMenuInput(u8 taskId)
 {
-    u16 *data;
+    s16 *data;
     s8 inputOptionId;
 
     data = gTasks[taskId].data;
@@ -503,7 +508,7 @@ static void PlayerPC_TurnOff(u8 taskId)
 
 static void InitItemStorageMenu(u8 taskId, u8 var)
 {
-    u16 *data;
+    s16 *data;
     struct WindowTemplate windowTemplate;
 
     data = gTasks[taskId].data;
@@ -621,7 +626,7 @@ static void ItemStorage_Toss(u8 taskId)
 
 static void ItemStorage_Enter(u8 taskId, bool8 toss)
 {
-    u16 *data = gTasks[taskId].data;
+    s16 *data = gTasks[taskId].data;
 
     tInTossMenu = toss;
     ItemStorage_EraseMainMenu(taskId);
@@ -654,7 +659,7 @@ static void SetPlayerPCListCount(u8 taskId)
 
 static void ItemStorage_EraseMainMenu(u8 taskId)
 {
-    u16 *data = gTasks[taskId].data;
+    s16 *data = gTasks[taskId].data;
     ClearStdWindowAndFrameToTransparent(tWindowId, FALSE);
     ClearWindowTilemap(tWindowId);
     RemoveWindow(tWindowId);
@@ -700,7 +705,7 @@ static void Mailbox_DrawMailboxMenu(u8 taskId)
 
 static void Mailbox_ProcessInput(u8 taskId)
 {
-    u16 *data = gTasks[taskId].data;
+    s16 *data = gTasks[taskId].data;
 
     if (!gPaletteFade.active)
     {
@@ -1345,6 +1350,7 @@ static void ItemStorage_PrintItemQuantity(u8 windowId, u16 value, u32 mode, u8 x
 // Start an item Withdraw/Toss
 static void ItemStorage_DoItemAction(u8 taskId)
 {
+    u8 *end;
     s16 *data = gTasks[taskId].data;
     u16 pos = gPlayerPCItemPageInfo.cursorPos + gPlayerPCItemPageInfo.itemsAbove;
     ItemStorage_RemoveScrollIndicator();
@@ -1360,7 +1366,8 @@ static void ItemStorage_DoItemAction(u8 taskId)
         }
 
         // Withdrawing multiple items, show "how many" message
-        CopyItemName(gSaveBlock1Ptr->pcItems[pos].itemId, gStringVar1);
+        end = CopyItemNameHandlePlural(gSaveBlock1Ptr->pcItems[pos].itemId, gStringVar1, 2);
+        WrapFontIdToFit(gStringVar1, end, FONT_NORMAL, WindowWidthPx(ITEMPC_WIN_MESSAGE) - 6);
         ItemStorage_PrintMessage(ItemStorage_GetMessage(MSG_HOW_MANY_TO_WITHDRAW));
     }
     else
@@ -1373,7 +1380,8 @@ static void ItemStorage_DoItemAction(u8 taskId)
         }
 
         // Tossing multiple items, show "how many" message
-        CopyItemName(gSaveBlock1Ptr->pcItems[pos].itemId, gStringVar1);
+        end = CopyItemNameHandlePlural(gSaveBlock1Ptr->pcItems[pos].itemId, gStringVar1, 2);
+        WrapFontIdToFit(gStringVar1, end, FONT_NORMAL, WindowWidthPx(ITEMPC_WIN_MESSAGE) - 6);
         ItemStorage_PrintMessage(ItemStorage_GetMessage(MSG_HOW_MANY_TO_TOSS));
     }
 
@@ -1422,7 +1430,8 @@ static void ItemStorage_DoItemWithdraw(u8 taskId)
     if (AddBagItem(gSaveBlock1Ptr->pcItems[pos].itemId, tQuantity) == TRUE)
     {
         // Item withdrawn
-        CopyItemName(gSaveBlock1Ptr->pcItems[pos].itemId, gStringVar1);
+        u8 *end = CopyItemNameHandlePlural(gSaveBlock1Ptr->pcItems[pos].itemId, gStringVar1, tQuantity);
+        WrapFontIdToFit(gStringVar1, end, FONT_NORMAL, WindowWidthPx(ITEMPC_WIN_MESSAGE) - 6);
         ConvertIntToDecimalStringN(gStringVar2, tQuantity, STR_CONV_MODE_LEFT_ALIGN, 3);
         ItemStorage_PrintMessage(ItemStorage_GetMessage(MSG_WITHDREW_ITEM));
         gTasks[taskId].func = ItemStorage_HandleRemoveItem;
@@ -1444,7 +1453,8 @@ static void ItemStorage_DoItemToss(u8 taskId)
     if (!ItemId_GetImportance(gSaveBlock1Ptr->pcItems[pos].itemId))
     {
         // Show toss confirmation prompt
-        CopyItemName(gSaveBlock1Ptr->pcItems[pos].itemId, gStringVar1);
+        u8 *end = CopyItemNameHandlePlural(gSaveBlock1Ptr->pcItems[pos].itemId, gStringVar1, tQuantity);
+        WrapFontIdToFit(gStringVar1, end, FONT_NORMAL, WindowWidthPx(ITEMPC_WIN_MESSAGE) - 6);
         ConvertIntToDecimalStringN(gStringVar2, tQuantity, STR_CONV_MODE_LEFT_ALIGN, 3);
         ItemStorage_PrintMessage(ItemStorage_GetMessage(MSG_OKAY_TO_THROW_AWAY));
         CreateYesNoMenuWithCallbacks(taskId, &sWindowTemplates_ItemStorage[ITEMPC_WIN_YESNO], 1, 0, 1, 0x214, 0xE, &ItemTossYesNoFuncs);
@@ -1488,7 +1498,6 @@ static void ItemStorage_HandleRemoveItem(u8 taskId)
 
 static void ItemStorage_HandleErrorMessageInput(u8 taskId)
 {
-    s16 *data = gTasks[taskId].data;
     if (JOY_NEW(A_BUTTON | B_BUTTON))
     {
         ItemStorage_PrintMessage(ItemStorage_GetMessage(gSaveBlock1Ptr->pcItems[gPlayerPCItemPageInfo.itemsAbove + gPlayerPCItemPageInfo.cursorPos].itemId));

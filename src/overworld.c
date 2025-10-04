@@ -42,6 +42,7 @@
 #include "random.h"
 #include "roamer.h"
 #include "rotating_gate.h"
+#include "rtc.h"
 #include "safari_zone.h"
 #include "save.h"
 #include "save_location.h"
@@ -58,6 +59,7 @@
 #include "tv.h"
 #include "scanline_effect.h"
 #include "wild_encounter.h"
+#include "vs_seeker.h"
 #include "frontier_util.h"
 #include "constants/abilities.h"
 #include "constants/layouts.h"
@@ -131,17 +133,14 @@ static void UpdateAllLinkPlayers(u16 *, s32);
 static u8 FlipVerticalAndClearForced(u8, u8);
 static u8 LinkPlayerGetCollision(u8, u8, s16, s16);
 static void CreateLinkPlayerSprite(u8, u8);
-static void GetLinkPlayerCoords(u8, u16 *, u16 *);
+static void GetLinkPlayerCoords(u8, s16 *, s16 *);
 static u8 GetLinkPlayerFacingDirection(u8);
 static u8 GetLinkPlayerElevation(u8);
-static s32 GetLinkPlayerObjectStepTimer(u8);
 static u8 GetLinkPlayerIdAt(s16, s16);
 static void SetPlayerFacingDirection(u8, u8);
 static void ZeroObjectEvent(struct ObjectEvent *);
 static void SpawnLinkPlayerObjectEvent(u8, s16, s16, u8);
 static void InitLinkPlayerObjectEventPos(struct ObjectEvent *, s16, s16);
-static void SetLinkPlayerObjectRange(u8, u8);
-static void DestroyLinkPlayerObject(u8);
 static u8 GetSpriteForLinkedPlayer(u8);
 static void RunTerminateLinkScript(void);
 static u32 GetLinkSendQueueLength(void);
@@ -183,14 +182,14 @@ static u16 (*sPlayerKeyInterceptCallback)(u32);
 static bool8 sReceivingFromLink;
 static u8 sRfuKeepAliveTimer;
 
-u16 *gOverworldTilemapBuffer_Bg2;
-u16 *gOverworldTilemapBuffer_Bg1;
-u16 *gOverworldTilemapBuffer_Bg3;
-u16 gHeldKeyCodeToSend;
-void (*gFieldCallback)(void);
-bool8 (*gFieldCallback2)(void);
-u8 gLocalLinkPlayerId; // This is our player id in a multiplayer mode.
-u8 gFieldLinkPlayerCount;
+COMMON_DATA u16 *gOverworldTilemapBuffer_Bg2 = NULL;
+COMMON_DATA u16 *gOverworldTilemapBuffer_Bg1 = NULL;
+COMMON_DATA u16 *gOverworldTilemapBuffer_Bg3 = NULL;
+COMMON_DATA u16 gHeldKeyCodeToSend = 0;
+COMMON_DATA void (*gFieldCallback)(void) = NULL;
+COMMON_DATA bool8 (*gFieldCallback2)(void) = NULL;
+COMMON_DATA u8 gLocalLinkPlayerId = 0; // This is our player id in a multiplayer mode.
+COMMON_DATA u8 gFieldLinkPlayerCount = 0;
 
 EWRAM_DATA static u8 sObjectEventLoadFlag = 0;
 EWRAM_DATA struct WarpData gLastUsedWarp = {0};
@@ -361,9 +360,8 @@ static void (*const sMovementStatusHandler[])(struct LinkPlayerObjectEvent *, st
 void DoWhiteOut(void)
 {
     RunScriptImmediately(EventScript_WhiteOut);
-    #if B_WHITEOUT_MONEY == GEN_3
-    SetMoney(&gSaveBlock1Ptr->money, GetMoney(&gSaveBlock1Ptr->money) / 2);
-    #endif
+    if (B_WHITEOUT_MONEY == GEN_3)
+        SetMoney(&gSaveBlock1Ptr->money, GetMoney(&gSaveBlock1Ptr->money) / 2);
     HealPlayerParty();
     Overworld_ResetStateAfterWhiteOut();
     SetWarpDestinationToLastHealLocation();
@@ -402,10 +400,14 @@ void Overworld_ResetStateAfterDigEscRope(void)
 }
 
 #if B_RESET_FLAGS_VARS_AFTER_WHITEOUT  == TRUE
-    void Overworld_ResetBattleFlagsAndVars(void)
+void Overworld_ResetBattleFlagsAndVars(void)
 {
-    #if VAR_TERRAIN != 0
-        VarSet(VAR_TERRAIN, 0);
+    #if B_VAR_STARTING_STATUS != 0
+        VarSet(B_VAR_STARTING_STATUS, 0);
+    #endif
+
+    #if B_VAR_STARTING_STATUS_TIMER != 0
+        VarSet(B_VAR_STARTING_STATUS_TIMER, 0);
     #endif
 
     #if B_VAR_WILD_AI_FLAGS != 0
@@ -417,6 +419,8 @@ void Overworld_ResetStateAfterDigEscRope(void)
     FlagClear(B_SMART_WILD_AI_FLAG);
     FlagClear(B_FLAG_NO_BAG_USE);
     FlagClear(B_FLAG_NO_CATCHING);
+    FlagClear(B_FLAG_DYNAMAX_BATTLE);
+    FlagClear(B_FLAG_SKY_BATTLE);
 }
 #endif
 
@@ -428,9 +432,8 @@ static void Overworld_ResetStateAfterWhiteOut(void)
     FlagClear(FLAG_SYS_SAFARI_MODE);
     FlagClear(FLAG_SYS_USE_STRENGTH);
     FlagClear(FLAG_SYS_USE_FLASH);
-#if B_RESET_FLAGS_VARS_AFTER_WHITEOUT  == TRUE
-    Overworld_ResetBattleFlagsAndVars();
-#endif
+    if (B_RESET_FLAGS_VARS_AFTER_WHITEOUT == TRUE)
+        Overworld_ResetBattleFlagsAndVars();
     // If you were defeated by Kyogre/Groudon and the step counter has
     // maxed out, end the abnormal weather.
     if (VarGet(VAR_SHOULD_END_ABNORMAL_WEATHER) == 1)
@@ -446,7 +449,7 @@ static void UpdateMiscOverworldStates(void)
     ChooseAmbientCrySpecies();
     ResetCyclingRoadChallengeData();
     UpdateLocationHistoryForRoamer();
-    RoamerMoveToOtherLocationSet();
+    MoveAllRoamersToOtherLocationSets();
 }
 
 void ResetGameStats(void)
@@ -621,7 +624,7 @@ static void LoadCurrentMapData(void)
 static void LoadSaveblockMapHeader(void)
 {
     gMapHeader = *Overworld_GetMapHeaderByGroupAndId(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);
-    gMapHeader.mapLayout = GetMapLayout(gMapHeader.mapLayoutId);
+    gMapHeader.mapLayout = GetMapLayout(gSaveBlock1Ptr->mapLayoutId);
 }
 
 static void SetPlayerCoordsFromWarp(void)
@@ -822,7 +825,13 @@ void LoadMapFromCameraTransition(u8 mapGroup, u8 mapNum)
     ClearTempFieldEventData();
     ResetCyclingRoadChallengeData();
     RestartWildEncounterImmunitySteps();
+#if FREE_MATCH_CALL == FALSE
     TryUpdateRandomTrainerRematches(mapGroup, mapNum);
+#endif //FREE_MATCH_CALL
+
+if (I_VS_SEEKER_CHARGING != 0)
+    MapResetTrainerRematches(mapGroup, mapNum);
+
     DoTimeBasedEvents();
     SetSavedWeatherFromCurrMapHeader();
     ChooseAmbientCrySpecies();
@@ -838,14 +847,22 @@ void LoadMapFromCameraTransition(u8 mapGroup, u8 mapNum)
 
     InitSecondaryTilesetAnimation();
     UpdateLocationHistoryForRoamer();
-    RoamerMove();
+    MoveAllRoamers();
     DoCurrentWeather();
     ResetFieldTasksArgs();
     RunOnResumeMapScript();
 
-    if (gMapHeader.regionMapSectionId != MAPSEC_BATTLE_FRONTIER
-     || gMapHeader.regionMapSectionId != sLastMapSectionId)
-        ShowMapNamePopup();
+    if (OW_HIDE_REPEAT_MAP_POPUP)
+    {
+        if (gMapHeader.regionMapSectionId != sLastMapSectionId)
+            ShowMapNamePopup();
+    }
+    else
+    {
+        if (gMapHeader.regionMapSectionId != MAPSEC_BATTLE_FRONTIER
+         || gMapHeader.regionMapSectionId != sLastMapSectionId)
+            ShowMapNamePopup();
+    }
 }
 
 static void LoadMapFromWarp(bool32 a1)
@@ -872,7 +889,13 @@ static void LoadMapFromWarp(bool32 a1)
     ClearTempFieldEventData();
     ResetCyclingRoadChallengeData();
     RestartWildEncounterImmunitySteps();
+#if FREE_MATCH_CALL == FALSE
     TryUpdateRandomTrainerRematches(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);
+#endif //FREE_MATCH_CALL
+
+if (I_VS_SEEKER_CHARGING != 0)
+     MapResetTrainerRematches(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);
+
     if (a1 != TRUE)
         DoTimeBasedEvents();
     SetSavedWeatherFromCurrMapHeader();
@@ -883,7 +906,8 @@ static void LoadMapFromWarp(bool32 a1)
     Overworld_ClearSavedMusic();
     RunOnTransitionMapScript();
     UpdateLocationHistoryForRoamer();
-    RoamerMoveToOtherLocationSet();
+    MoveAllRoamersToOtherLocationSets();
+    gChainFishingDexNavStreak = 0;
     if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)
         InitBattlePyramidMap(FALSE);
     else if (InTrainerHill())
@@ -1025,8 +1049,8 @@ void SetObjectEventLoadFlag(u8 flag)
     sObjectEventLoadFlag = flag;
 }
 
-// Unused, sObjectEventLoadFlag is read directly
-static u8 GetObjectEventLoadFlag(void)
+// sObjectEventLoadFlag is read directly
+static u8 UNUSED GetObjectEventLoadFlag(void)
 {
     return sObjectEventLoadFlag;
 }
@@ -1321,7 +1345,7 @@ void UpdateAmbientCry(s16 *state, u16 *delayCounter)
             }
         }
         // Ambient cries after the first one take between 1200-2399 frames (~20-40 seconds)
-        // If the player has a pokemon with the ability Swarm in their party, the time is halved to 600-1199 frames (~10-20 seconds)
+        // If the player has a Pokémon with the ability Swarm in their party, the time is halved to 600-1199 frames (~10-20 seconds)
         *delayCounter = ((Random() % 1200) + 1200) / divBy;
         *state = AMB_CRY_WAIT;
         break;
@@ -1333,7 +1357,7 @@ void UpdateAmbientCry(s16 *state, u16 *delayCounter)
         }
         break;
     case AMB_CRY_IDLE:
-        // No land/water pokemon on this map
+        // No land/water Pokémon on this map
         break;
     }
 }
@@ -1344,7 +1368,7 @@ static void ChooseAmbientCrySpecies(void)
      && gSaveBlock1Ptr->location.mapNum == MAP_NUM(ROUTE130))
      && !IsMirageIslandPresent())
     {
-        // Only play water pokemon cries on this route
+        // Only play water Pokémon cries on this route
         // when Mirage Island is not present
         sIsAmbientCryWaterMon = TRUE;
         sAmbientCrySpecies = GetLocalWaterMon();
@@ -1512,7 +1536,10 @@ void CB2_Overworld(void)
         SetVBlankCallback(NULL);
     OverworldBasic();
     if (fading)
+    {
         SetFieldVBlankCallback();
+        return;
+    }
 }
 
 void SetMainCallback1(MainCallback cb)
@@ -1991,6 +2018,10 @@ static bool32 ReturnToFieldLocal(u8 *state)
         ResetScreenForMapLoad();
         ResumeMap(FALSE);
         InitObjectEventsReturnToField();
+        if (gFieldCallback == FieldCallback_UseFly)
+            RemoveFollowingPokemon();
+        else
+            UpdateFollowingPokemon();
         SetCameraToTrackPlayer();
         (*state)++;
         break;
@@ -2183,7 +2214,7 @@ static void InitObjectEventsLink(void)
 
 static void InitObjectEventsLocal(void)
 {
-    s16 x, y;
+    u16 x, y;
     struct InitialPlayerAvatarState *player;
 
     gTotalCameraPixelOffsetX = 0;
@@ -2195,6 +2226,7 @@ static void InitObjectEventsLocal(void)
     SetPlayerAvatarTransitionFlags(player->transitionFlags);
     ResetInitialPlayerAvatarState();
     TrySpawnObjectEvents(0, 0);
+    UpdateFollowingPokemon();
     TryRunOnWarpIntoMapScript();
 }
 
@@ -2679,8 +2711,7 @@ u32 GetCableClubPartnersReady(void)
     return CABLE_SEAT_WAITING;
 }
 
-// Unused
-static bool32 IsAnyPlayerExitingCableClub(void)
+static bool32 UNUSED IsAnyPlayerExitingCableClub(void)
 {
     return IsAnyPlayerInLinkState(PLAYER_LINK_STATE_EXITING_ROOM);
 }
@@ -2985,10 +3016,10 @@ static void InitLinkPlayerObjectEventPos(struct ObjectEvent *objEvent, s16 x, s1
     objEvent->previousCoords.y = y;
     SetSpritePosToMapCoords(x, y, &objEvent->initialCoords.x, &objEvent->initialCoords.y);
     objEvent->initialCoords.x += 8;
-    ObjectEventUpdateElevation(objEvent);
+    ObjectEventUpdateElevation(objEvent, NULL);
 }
 
-static void SetLinkPlayerObjectRange(u8 linkPlayerId, u8 dir)
+static void UNUSED SetLinkPlayerObjectRange(u8 linkPlayerId, u8 dir)
 {
     if (gLinkPlayerObjectEvents[linkPlayerId].active)
     {
@@ -2998,7 +3029,7 @@ static void SetLinkPlayerObjectRange(u8 linkPlayerId, u8 dir)
     }
 }
 
-static void DestroyLinkPlayerObject(u8 linkPlayerId)
+static void UNUSED DestroyLinkPlayerObject(u8 linkPlayerId)
 {
     struct LinkPlayerObjectEvent *linkPlayerObjEvent = &gLinkPlayerObjectEvents[linkPlayerId];
     u8 objEventId = linkPlayerObjEvent->objEventId;
@@ -3017,7 +3048,7 @@ static u8 GetSpriteForLinkedPlayer(u8 linkPlayerId)
     return objEvent->spriteId;
 }
 
-static void GetLinkPlayerCoords(u8 linkPlayerId, u16 *x, u16 *y)
+static void GetLinkPlayerCoords(u8 linkPlayerId, s16 *x, s16 *y)
 {
     u8 objEventId = gLinkPlayerObjectEvents[linkPlayerId].objEventId;
     struct ObjectEvent *objEvent = &gObjectEvents[objEventId];
@@ -3039,7 +3070,7 @@ static u8 GetLinkPlayerElevation(u8 linkPlayerId)
     return objEvent->currentElevation;
 }
 
-static s32 GetLinkPlayerObjectStepTimer(u8 linkPlayerId)
+static s32 UNUSED GetLinkPlayerObjectStepTimer(u8 linkPlayerId)
 {
     u8 objEventId = gLinkPlayerObjectEvents[linkPlayerId].objEventId;
     struct ObjectEvent *objEvent = &gObjectEvents[objEventId];
@@ -3072,7 +3103,7 @@ static void SetPlayerFacingDirection(u8 linkPlayerId, u8 facing)
     {
         if (facing > FACING_FORCED_RIGHT)
         {
-            objEvent->triggerGroundEffectsOnMove = 1;
+            objEvent->triggerGroundEffectsOnMove = TRUE;
         }
         else
         {
@@ -3125,7 +3156,7 @@ static bool8 FacingHandler_DpadMovement(struct LinkPlayerObjectEvent *linkPlayer
     {
         objEvent->directionSequenceIndex = 16;
         ShiftObjectEventCoords(objEvent, x, y);
-        ObjectEventUpdateElevation(objEvent);
+        ObjectEventUpdateElevation(objEvent, NULL);
         return TRUE;
     }
 }
@@ -3221,7 +3252,7 @@ static void CreateLinkPlayerSprite(u8 linkPlayerId, u8 gameVersion)
         sprite = &gSprites[objEvent->spriteId];
         sprite->coordOffsetEnabled = TRUE;
         sprite->data[0] = linkPlayerId;
-        objEvent->triggerGroundEffectsOnMove = 0;
+        objEvent->triggerGroundEffectsOnMove = FALSE;
     }
 }
 

@@ -189,7 +189,7 @@ static const u16 sTerraOrMarineCaveMapSecIds[ABNORMAL_WEATHER_LOCATIONS] =
     [ABNORMAL_WEATHER_ROUTE_129_EAST  - 1] = MAPSEC_ROUTE_129
 };
 
-#define MARINE_CAVE_COORD(location)(ABNORMAL_WEATHER_##location - MARINE_CAVE_LOCATIONS_START)
+#define MARINE_CAVE_COORD(location) (ABNORMAL_WEATHER_##location - MARINE_CAVE_LOCATIONS_START)
 
 static const struct UCoords16 sMarineCaveLocationCoords[MARINE_CAVE_LOCATIONS] =
 {
@@ -1124,8 +1124,8 @@ static void RegionMap_InitializeStateBasedOnSSTidalLocation(void)
 {
     u16 y;
     u16 x;
-    u8 mapGroup;
-    u8 mapNum;
+    s8 mapGroup;
+    s8 mapNum;
     u16 dimensionScale;
     s16 xOnMap;
     s16 yOnMap;
@@ -1434,14 +1434,12 @@ static void FreeRegionMapCursorSprite(void)
     }
 }
 
-// Unused
-static void SetUnkCursorSpriteData(void)
+static void UNUSED SetUnkCursorSpriteData(void)
 {
     sRegionMap->cursorSprite->data[3] = TRUE;
 }
 
-// Unused
-static void ClearUnkCursorSpriteData(void)
+static void UNUSED ClearUnkCursorSpriteData(void)
 {
     sRegionMap->cursorSprite->data[3] = FALSE;
 }

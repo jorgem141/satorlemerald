@@ -11,6 +11,7 @@ static const struct SpriteFrameImage sPicTable_CheriBerryTree[] = {
 };
 
 const u16 gBerryTreePaletteTagTable_Cheri[] = {OBJ_EVENT_PAL_TAG_NPC_2, OBJ_EVENT_PAL_TAG_NPC_3, OBJ_EVENT_PAL_TAG_NPC_3, OBJ_EVENT_PAL_TAG_NPC_3, OBJ_EVENT_PAL_TAG_NPC_3};
+const u8 gBerryTreePaletteSlotTable_Cheri[] = {3, 4, 4, 4, 4, 4, 4};
 
 static const struct SpriteFrameImage sPicTable_ChestoBerryTree[] = {
     overworld_frame(gObjectEventPic_BerryTreeDirtPile, 2, 2, 0),

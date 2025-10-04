@@ -4,8 +4,10 @@
 #include "blit.h"
 #include "dma3.h"
 #include "event_data.h"
+#include "field_weather.h"
 #include "graphics.h"
 #include "main.h"
+#include "map_name_popup.h"
 #include "menu.h"
 #include "menu_helpers.h"
 #include "palette.h"
@@ -18,6 +20,7 @@
 #include "task.h"
 #include "text_window.h"
 #include "window.h"
+#include "config/overworld.h"
 #include "constants/songs.h"
 
 #define DLG_WINDOW_PALETTE_NUM 15
@@ -62,12 +65,12 @@ static void task_free_buf_after_copying_tile_data_to_vram(u8 taskId);
 
 static EWRAM_DATA u8 sStartMenuWindowId = 0;
 static EWRAM_DATA u8 sMapNamePopupWindowId = 0;
+static EWRAM_DATA u8 sSecondaryPopupWindowId = 0;
 static EWRAM_DATA struct Menu sMenu = {0};
 static EWRAM_DATA u16 sTileNum = 0;
 static EWRAM_DATA u8 sPaletteNum = 0;
 static EWRAM_DATA u8 sYesNoWindowId = 0;
 static EWRAM_DATA u8 sHofPCTopBarWindowId = 0;
-static EWRAM_DATA u16 sFiller = 0;  // needed to align
 static EWRAM_DATA bool8 sScheduledBgCopiesToVram[4] = {FALSE};
 static EWRAM_DATA u16 sTempTileDataBufferIdx = 0;
 static EWRAM_DATA void *sTempTileDataBuffer[0x20] = {NULL};
@@ -113,6 +116,7 @@ static const u8 sTextColors[] = { TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_WHITE, TEXT_C
 static const struct MenuInfoIcon sMenuInfoIcons[] =
 {   // { width, height, offset }
     { 12, 12, 0x00 },  // Unused
+    [TYPE_NONE + 1]     = { 32, 12, 0xA4 }, // Copy of TYPE_MYSTERY's
     [TYPE_NORMAL + 1]   = { 32, 12, 0x20 },
     [TYPE_FIGHTING + 1] = { 32, 12, 0x64 },
     [TYPE_FLYING + 1]   = { 32, 12, 0x60 },
@@ -146,6 +150,8 @@ void InitStandardTextBoxWindows(void)
     InitWindows(sStandardTextBox_WindowTemplates);
     sStartMenuWindowId = WINDOW_NONE;
     sMapNamePopupWindowId = WINDOW_NONE;
+    if (OW_POPUP_GENERATION == GEN_5)
+        sSecondaryPopupWindowId = WINDOW_NONE;
 }
 
 void FreeAllOverworldWindowBuffers(void)
@@ -443,14 +449,12 @@ void Menu_LoadStdPalAt(u16 offset)
     LoadPalette(gStandardMenuPalette, offset, STD_WINDOW_PALETTE_SIZE);
 }
 
-// Unused
-static const u16 *Menu_GetStdPal(void)
+static UNUSED const u16* Menu_GetStdPal(void)
 {
     return gStandardMenuPalette;
 }
 
-// Unused
-static u16 Menu_GetStdPalColor(u8 colorNum)
+static u16 UNUSED Menu_GetStdPalColor(u8 colorNum)
 {
     if (colorNum > 15)
         colorNum = 0;
@@ -511,14 +515,12 @@ void RemoveStartMenuWindow(void)
     }
 }
 
-// Unused
-static u16 GetDialogFrameBaseTileNum(void)
+static u16 UNUSED GetDialogFrameBaseTileNum(void)
 {
     return DLG_WINDOW_BASE_TILE_NUM;
 }
 
-// Unused
-static u16 GetStandardFrameBaseTileNum(void)
+static u16 UNUSED GetStandardFrameBaseTileNum(void)
 {
     return STD_WINDOW_BASE_TILE_NUM;
 }
@@ -526,7 +528,12 @@ static u16 GetStandardFrameBaseTileNum(void)
 u8 AddMapNamePopUpWindow(void)
 {
     if (sMapNamePopupWindowId == WINDOW_NONE)
-        sMapNamePopupWindowId = AddWindowParameterized(0, 1, 1, 10, 3, 14, 0x107);
+    {
+        if (OW_POPUP_GENERATION == GEN_5)
+            sMapNamePopupWindowId = AddWindowParameterized(0, 0, 0, 30, 3, 14, 0x107);
+        else
+            sMapNamePopupWindowId = AddWindowParameterized(0, 1, 1, 10, 3, 14, 0x107);
+    }
     return sMapNamePopupWindowId;
 }
 
@@ -568,8 +575,7 @@ void DrawDialogFrameWithCustomTileAndPalette(u8 windowId, bool8 copyToVram, u16 
         CopyWindowToVram(windowId, COPYWIN_FULL);
 }
 
-// Never used.
-static void DrawDialogFrameWithCustomTile(u8 windowId, bool8 copyToVram, u16 tileNum)
+static void UNUSED DrawDialogFrameWithCustomTile(u8 windowId, bool8 copyToVram, u16 tileNum)
 {
     sTileNum = tileNum;
     sPaletteNum = GetWindowAttribute(windowId, WINDOW_PALETTE_NUM);
@@ -878,15 +884,13 @@ void HofPCTopBar_PrintPair(const u8 *string, const u8 *string2, bool8 noBg, u8 l
     }
 }
 
-// Unused
-static void HofPCTopBar_CopyToVram(void)
+static void UNUSED HofPCTopBar_CopyToVram(void)
 {
     if (sHofPCTopBarWindowId != WINDOW_NONE)
         CopyWindowToVram(sHofPCTopBarWindowId, COPYWIN_FULL);
 }
 
-// Unused
-static void HofPCTopBar_Clear(void)
+static void UNUSED HofPCTopBar_Clear(void)
 {
     if (sHofPCTopBarWindowId != WINDOW_NONE)
     {
@@ -937,8 +941,7 @@ u8 InitMenuNormal(u8 windowId, u8 fontId, u8 left, u8 top, u8 cursorHeight, u8 n
     return InitMenu(windowId, fontId, left, top, cursorHeight, numChoices, initialCursorPos, FALSE);
 }
 
-// Unused
-static u8 InitMenuDefaultCursorHeight(u8 windowId, u8 fontId, u8 left, u8 top, u8 numChoices, u8 initialCursorPos)
+static u8 UNUSED InitMenuDefaultCursorHeight(u8 windowId, u8 fontId, u8 left, u8 top, u8 numChoices, u8 initialCursorPos)
 {
     u8 cursorHeight = GetMenuCursorDimensionByFont(fontId, 1);
     return InitMenuNormal(windowId, fontId, left, top, cursorHeight, numChoices, initialCursorPos);
@@ -1115,8 +1118,7 @@ void PrintMenuActionTextsAtPos(u8 windowId, u8 fontId, u8 left, u8 top, u8 lineH
     CopyWindowToVram(windowId, COPYWIN_GFX);
 }
 
-// Unused
-static void PrintMenuActionTextsWithSpacing(u8 windowId, u8 fontId, u8 left, u8 top, u8 lineHeight, u8 itemCount, const struct MenuAction *menuActions, u8 letterSpacing, u8 lineSpacing)
+static void UNUSED PrintMenuActionTextsWithSpacing(u8 windowId, u8 fontId, u8 left, u8 top, u8 lineHeight, u8 itemCount, const struct MenuAction *menuActions, u8 letterSpacing, u8 lineSpacing)
 {
     u8 i;
     for (i = 0; i < itemCount; i++)
@@ -1124,8 +1126,7 @@ static void PrintMenuActionTextsWithSpacing(u8 windowId, u8 fontId, u8 left, u8 
     CopyWindowToVram(windowId, COPYWIN_GFX);
 }
 
-// Unused
-static void PrintMenuActionTextsAtTop(u8 windowId, u8 fontId, u8 lineHeight, u8 itemCount, const struct MenuAction *menuActions)
+static void UNUSED PrintMenuActionTextsAtTop(u8 windowId, u8 fontId, u8 lineHeight, u8 itemCount, const struct MenuAction *menuActions)
 {
     PrintMenuActionTextsAtPos(windowId, fontId, GetFontAttribute(fontId, FONTATTR_MAX_LETTER_WIDTH), 1, lineHeight, itemCount, menuActions);
 }
@@ -1157,8 +1158,7 @@ void PrintMenuActionTexts(u8 windowId, u8 fontId, u8 left, u8 top, u8 letterSpac
     CopyWindowToVram(windowId, COPYWIN_GFX);
 }
 
-// Unused
-static void PrintMenuActionTextsAtTopById(u8 windowId, u8 fontId, u8 lineHeight, u8 itemCount, const struct MenuAction *menuActions, const u8 *actionIds)
+static void UNUSED PrintMenuActionTextsAtTopById(u8 windowId, u8 fontId, u8 lineHeight, u8 itemCount, const struct MenuAction *menuActions, const u8 *actionIds)
 {
     PrintMenuActionTexts(windowId, fontId, GetFontAttribute(fontId, FONTATTR_MAX_LETTER_WIDTH), 1, GetFontAttribute(fontId, FONTATTR_LETTER_SPACING), lineHeight, itemCount, menuActions, actionIds);
 }
@@ -1215,7 +1215,7 @@ static void CreateYesNoMenuAtPos(const struct WindowTemplate *window, u8 fontId,
     InitMenuNormal(sYesNoWindowId, fontId, left, top, GetFontAttribute(fontId, FONTATTR_MAX_LETTER_HEIGHT), 2, initialCursorPos);
 }
 
-static void CreateYesNoMenuInTopLeft(const struct WindowTemplate *window, u8 fontId, u16 baseTileNum, u8 paletteNum)
+static void UNUSED CreateYesNoMenuInTopLeft(const struct WindowTemplate *window, u8 fontId, u16 baseTileNum, u8 paletteNum)
 {
     CreateYesNoMenuAtPos(window, fontId, 0, 1, baseTileNum, paletteNum, 0);
 }
@@ -1246,8 +1246,7 @@ static void PrintMenuActionGridText(u8 windowId, u8 fontId, u8 left, u8 top, u8 
     CopyWindowToVram(windowId, COPYWIN_GFX);
 }
 
-// Unused
-static void PrintMenuActionGridTextAtTop(u8 windowId, u8 fontId, u8 width, u8 height, u8 columns, u8 rows, const struct MenuAction *menuActions)
+static void UNUSED PrintMenuActionGridTextAtTop(u8 windowId, u8 fontId, u8 width, u8 height, u8 columns, u8 rows, const struct MenuAction *menuActions)
 {
     PrintMenuActionGridText(windowId, fontId, GetFontAttribute(fontId, FONTATTR_MAX_LETTER_WIDTH), 0, width, height, columns, rows, menuActions);
 }
@@ -1283,8 +1282,7 @@ void PrintMenuActionGrid(u8 windowId, u8 fontId, u8 left, u8 top, u8 optionWidth
     CopyWindowToVram(windowId, COPYWIN_GFX);
 }
 
-// Unused
-static void PrintMenuActionGrid_TopLeft(u8 windowId, u8 fontId, u8 optionWidth, u8 unused, u8 horizontalCount, u8 verticalCount, const struct MenuAction *menuActions, const u8 *actionIds)
+static void UNUSED PrintMenuActionGrid_TopLeft(u8 windowId, u8 fontId, u8 optionWidth, u8 unused, u8 horizontalCount, u8 verticalCount, const struct MenuAction *menuActions, const u8 *actionIds)
 {
     PrintMenuActionGrid(windowId, fontId, GetFontAttribute(fontId, FONTATTR_MAX_LETTER_WIDTH), 0, optionWidth, horizontalCount, verticalCount, menuActions, actionIds);
 }
@@ -1316,8 +1314,7 @@ static u8 InitMenuGrid(u8 windowId, u8 fontId, u8 left, u8 top, u8 optionWidth, 
     return sMenu.cursorPos;
 }
 
-// Unused
-static u8 InitMenuGridDefaultCursorHeight(u8 windowId, u8 fontId, u8 left, u8 top, u8 width, u8 columns, u8 rows, u8 cursorPos)
+static u8 UNUSED InitMenuGridDefaultCursorHeight(u8 windowId, u8 fontId, u8 left, u8 top, u8 width, u8 columns, u8 rows, u8 cursorPos)
 {
     u8 cursorHeight = GetMenuCursorDimensionByFont(fontId, 1);
     u8 numChoices = columns * rows;
@@ -1409,8 +1406,7 @@ u8 ChangeGridMenuCursorPosition(s8 deltaX, s8 deltaY)
     }
 }
 
-// Unused
-static s8 Menu_ProcessGridInput_NoSoundLimit(void)
+static s8 UNUSED Menu_ProcessGridInput_NoSoundLimit(void)
 {
     if (JOY_NEW(A_BUTTON))
     {
@@ -1490,8 +1486,7 @@ s8 Menu_ProcessGridInput(void)
     return MENU_NOTHING_CHOSEN;
 }
 
-// Unused
-static s8 Menu_ProcessGridInputRepeat_NoSoundLimit(void)
+static s8 UNUSED Menu_ProcessGridInputRepeat_NoSoundLimit(void)
 {
     if (JOY_NEW(A_BUTTON))
     {
@@ -1530,8 +1525,7 @@ static s8 Menu_ProcessGridInputRepeat_NoSoundLimit(void)
     return MENU_NOTHING_CHOSEN;
 }
 
-// Unused
-static s8 Menu_ProcessGridInputRepeat(void)
+static s8 UNUSED Menu_ProcessGridInputRepeat(void)
 {
     u8 oldPos = sMenu.cursorPos;
 
@@ -1606,7 +1600,7 @@ void PrintMenuTable(u8 windowId, u8 itemCount, const struct MenuAction *menuActi
     u32 i;
 
     for (i = 0; i < itemCount; i++)
-        AddTextPrinterParameterized(windowId, 1, menuActions[i].text, 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
+        AddTextPrinterParameterized(windowId, FONT_NORMAL, menuActions[i].text, 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
 
     CopyWindowToVram(windowId, COPYWIN_GFX);
 }
@@ -1670,13 +1664,12 @@ void PrintMenuGridTable(u8 windowId, u8 optionWidth, u8 columns, u8 rows, const 
     for (i = 0; i < rows; i++)
     {
         for (j = 0; j < columns; j++)
-            AddTextPrinterParameterized(windowId, 1, menuActions[(i * columns) + j].text, (optionWidth * j) + 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
+            AddTextPrinterParameterized(windowId, FONT_NORMAL, menuActions[(i * columns) + j].text, (optionWidth * j) + 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
     }
     CopyWindowToVram(windowId, COPYWIN_GFX);
 }
 
-// Unused
-static void PrintMenuActionGridTextNoSpacing(u8 windowId, u8 optionWidth, u8 columns, u8 rows, const struct MenuAction *menuActions, const u8 *actionIds)
+static void UNUSED PrintMenuActionGridTextNoSpacing(u8 windowId, u8 optionWidth, u8 columns, u8 rows, const struct MenuAction *menuActions, const u8 *actionIds)
 {
     u8 i;
     u8 j;
@@ -2005,10 +1998,10 @@ void PrintPlayerNameOnWindow(u8 windowId, const u8 *src, u16 x, u16 y)
 
     StringExpandPlaceholders(gStringVar4, src);
 
-    AddTextPrinterParameterized(windowId, 1, gStringVar4, x, y, TEXT_SKIP_DRAW, 0);
+    AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, x, y, TEXT_SKIP_DRAW, 0);
 }
 
-static void UnusedBlitBitmapRect(const struct Bitmap *src, struct Bitmap *dst, u16 srcX, u16 srcY, u16 dstX, u16 dstY, u16 width, u16 height)
+static void UNUSED UnusedBlitBitmapRect(const struct Bitmap *src, struct Bitmap *dst, u16 srcX, u16 srcY, u16 dstX, u16 dstY, u16 width, u16 height)
 {
     int loopSrcY, loopDstY, loopSrcX, loopDstX, xEnd, yEnd, multiplierSrcY, multiplierDstY;
     const u8 *pixelsSrc;
@@ -2083,14 +2076,12 @@ static void UnusedBlitBitmapRect(const struct Bitmap *src, struct Bitmap *dst, u
     }
 }
 
-// Unused
-static void LoadMonIconPalAtOffset(u8 palOffset, u16 speciesId)
+static void UNUSED LoadMonIconPalAtOffset(u8 palOffset, u16 speciesId)
 {
     LoadPalette(GetValidMonIconPalettePtr(speciesId), palOffset, PLTT_SIZE_4BPP);
 }
 
-// Unused
-static void DrawMonIconAtPos(u8 windowId, u16 speciesId, u32 personality, u16 x, u16 y)
+static void UNUSED DrawMonIconAtPos(u8 windowId, u16 speciesId, u32 personality, u16 x, u16 y)
 {
     BlitBitmapToWindow(windowId, GetMonIconPtr(speciesId, personality), x, y, 32, 32);
 }
@@ -2142,7 +2133,7 @@ void BufferSaveMenuText(u8 textId, u8 *dest, u8 color)
             break;
         case SAVE_MENU_CAUGHT:
             if (IsNationalPokedexEnabled())
-                string = ConvertIntToDecimalStringN(string, GetNationalPokedexCount(FLAG_GET_CAUGHT), STR_CONV_MODE_LEFT_ALIGN, 3);
+                string = ConvertIntToDecimalStringN(string, GetNationalPokedexCount(FLAG_GET_CAUGHT), STR_CONV_MODE_LEFT_ALIGN, 4);
             else
                 string = ConvertIntToDecimalStringN(string, GetHoennPokedexCount(FLAG_GET_CAUGHT), STR_CONV_MODE_LEFT_ALIGN, 3);
             *string = EOS;
@@ -2164,5 +2155,44 @@ void BufferSaveMenuText(u8 textId, u8 *dest, u8 color)
             *string = flagCount + CHAR_0;
             *endOfString = EOS;
             break;
+    }
+}
+
+// BW map pop-ups
+u8 AddSecondaryPopUpWindow(void)
+{
+    if (sSecondaryPopupWindowId == WINDOW_NONE)
+        sSecondaryPopupWindowId = AddWindowParameterized(0, 0, 17, 30, 3, 14, 0x161);
+    return sSecondaryPopupWindowId;
+}
+
+u8 GetSecondaryPopUpWindowId(void)
+{
+    return sSecondaryPopupWindowId;
+}
+
+void RemoveSecondaryPopUpWindow(void)
+{
+    if (sSecondaryPopupWindowId != WINDOW_NONE)
+    {
+        RemoveWindow(sSecondaryPopupWindowId);
+        sSecondaryPopupWindowId = WINDOW_NONE;
+    }
+}
+
+void HBlankCB_DoublePopupWindow(void)
+{
+    u16 offset = gTasks[gPopupTaskId].data[2];
+    u16 scanline = REG_VCOUNT;
+
+    if (scanline < 80 || scanline > 160)
+    {
+        REG_BG0VOFS = offset;
+        if(OW_POPUP_BW_ALPHA_BLEND && !IsWeatherAlphaBlend())
+            REG_BLDALPHA = BLDALPHA_BLEND(15, 5);
+    }
+    else
+    {
+        REG_BG0VOFS = 512 - offset;
     }
 }

@@ -3,7 +3,7 @@
 
 ASSUMPTIONS
 {
-    ASSUME(gBattleMoves[MOVE_HEAL_PULSE].effect == EFFECT_HEAL_PULSE);
+    ASSUME(gMovesInfo[MOVE_HEAL_PULSE].effect == EFFECT_HEAL_PULSE);
 }
 
 SINGLE_BATTLE_TEST("Heal Pulse heals the target by 1/2 of it's maxHP")
@@ -39,7 +39,6 @@ DOUBLE_BATTLE_TEST("Heal Pulse can heal partner")
 SINGLE_BATTLE_TEST("Heal Pulse is boosted by Mega Launcher")
 {
     GIVEN {
-        ASSUME(P_GEN_6_POKEMON == TRUE);
         PLAYER(SPECIES_WOBBUFFET) { MaxHP(100); HP(1); }
         OPPONENT(SPECIES_CLAWITZER);
     } WHEN {
@@ -69,7 +68,7 @@ SINGLE_BATTLE_TEST("Heal Pulse ignores accurace checks")
 SINGLE_BATTLE_TEST("Heal Pulse is blocked by Substitute")
 {
     GIVEN {
-        ASSUME(gBattleMoves[MOVE_SUBSTITUTE].effect == EFFECT_SUBSTITUTE);
+        ASSUME(gMovesInfo[MOVE_SUBSTITUTE].effect == EFFECT_SUBSTITUTE);
         PLAYER(SPECIES_WOBBUFFET) { MaxHP(100); HP(50); }
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
@@ -87,8 +86,8 @@ SINGLE_BATTLE_TEST("Heal Pulse is blocked by Substitute")
 SINGLE_BATTLE_TEST("Floral Healing heals the target by 2/3rd of it's maxHP if Grassy Terrain is on the field")
 {
     GIVEN {
-        ASSUME(gBattleMoves[MOVE_FLORAL_HEALING].argument == MOVE_EFFECT_FLORAL_HEALING);
-        ASSUME(gBattleMoves[MOVE_GRASSY_TERRAIN].effect == EFFECT_GRASSY_TERRAIN);
+        ASSUME(gMovesInfo[MOVE_FLORAL_HEALING].argument == MOVE_EFFECT_FLORAL_HEALING);
+        ASSUME(gMovesInfo[MOVE_GRASSY_TERRAIN].effect == EFFECT_GRASSY_TERRAIN);
         PLAYER(SPECIES_WOBBUFFET) { MaxHP(100); HP(1); }
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
